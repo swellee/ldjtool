@@ -1,0 +1,35 @@
+{
+  "name": "ldjtool",
+  "version": "0.6.4",
+  "scripts": {
+    "start": "node bin/ldjtool -w"
+  },
+  "dependencies": {
+    "pixl-xml": "*",
+    "prompt": "*",
+    "uglify-js": "*",
+    "node-xlsx": "*"
+  },
+  "bin": {
+    "ldjtool": "./bin/ldjtool"
+  },
+  "description": "**ludingji tool**",
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:swellee/ldjtool.git"
+  },
+  "keywords": [
+    "ldj",
+    "laya",
+    "client",
+    "tool"
+  ],
+  "author": "swellee",
+  "license": "MIT",
+  "bugs": {
+    "url": "git@github.com:swellee/ldjtool/issues"
+  },
+  "homepage": "git@github.com:swellee/ldjtool#README"
+}

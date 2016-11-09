@@ -1,0 +1,62 @@
+{
+  "import": {
+    "default":"laya.ui",
+    "Text":"laya.display",
+    "Input":"laya.display",
+    "Sprite":"laya.display",
+    "View": "ghostcoming.core",
+    "ItemRenderer": "ghostcoming.core",
+    "Rect": "ghostcoming.ui",
+    "Icon": "ghostcoming.ui",
+    "Button": "ghostcoming.ui",
+    "BitmapNum": "ghostcoming.ui",
+    "ButtonBar": "ghostcoming.ui",
+    "CheckButton": "ghostcoming.ui",
+    "HeroCard": "ghostcoming.ui",
+    "StarRate": "ghostcoming.ui",
+    "StarRate2": "ghostcoming.ui"
+  },
+  "specialAttr": {
+    "name":{
+      "default":"class",
+      "Button":{
+        "type":"prop",
+        "prop":"stateNum"
+      },
+      "List":{
+        "type":"childClass",
+        "prop":"itemRender",
+        "addProp":{
+          "vScrollBarSkin":"''"
+        }
+      }
+    },
+    "sceneColor":"",
+    "sceneBg":"",
+    "layers":"",
+    "layer":"",
+    "multiline":"",
+    "centerX":"",
+    "centerY":"",
+    "stateNum":"",
+    "styleSkin":"",
+    "var":"var",
+    "width":"size_2_0",
+    "height":"size_2_1",
+    "x":"pos_2_0",
+    "y":"pos_2_1",
+    "size":"fontSize",
+    "ItemRenderer":"itemRender",
+    "labelSize":"labelDisplay.fontSize",
+    "labelColors":"labelDisplay.color"
+  },
+  "specialClass":{
+    "Container": "Sprite",
+    "Tab": "ButtonBar",
+    "Label": "Text"
+  },
+  "overrideCreateChildren":{
+    "ItemRenderer":true
+  }
+
+}
