@@ -1,14 +1,15 @@
 {
   "name": "ldjtool",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "scripts": {
     "start": "node bin/ldjtool -w"
   },
   "dependencies": {
+    "node-xlsx": "*",
     "pixl-xml": "*",
     "prompt": "*",
     "uglify-js": "*",
-    "node-xlsx": "*"
+    "watch": "^1.0.1"
   },
   "bin": {
     "ldjtool": "./bin/ldjtool"

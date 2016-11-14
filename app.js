@@ -11,12 +11,15 @@ var userCfgPath = path.join(os.homedir(), ".ldjtoolCfg.json");
 var userUIRulePath = path.join(os.homedir(), ".ldjtoolUIRule.json");
 var toolCfg = require("./bin/config");
 var cfg = toolCfg;
+const uiwatch = require("watch");
+var uiwatching = false;
 
 var options = {
     "-h": showHelp,
     "-a": createPrjAP,
     "-u": parseUI,
     "-ux": addUIClazz,
+    "-uw": watchUIdir,
     "-m": modPrjConfig,
     "-x": parseSheet,
     "-b": buildApp,
@@ -88,6 +91,7 @@ function showHelp() {
     可选参数xlsx_out_path表示生成的tpl.json的存放目录（不传则使用ldjtool -c配置的放置目录）；\n\n\
     ldjtool -u [path or file] : 将指定目录下或指定的某个的mornUI生成的xml文件转换成as代码文件,不传路径则使用配置的baseUiFileDir路径；\n\n\
     ldjtool -ux : 添加UI解析时的 类名-包名 规则，以适应生成代码时对自定义类映射的支持；\n\n\
+    ldjtool -uw : 监控UI文件目录的改动，自动重新生成UI代码；\n\n\
     ldjtool -b [projectDir] :编译项目；projectDir为项目路径，不传则使用当前路径（如果当前路径不是客户端目录，则会出错）\n\
     ldjtool -p [projectDir] [ver]:发布项目，projectDir为项目路径，不传则使用当前路径, 参数ver为版本号，不传则使用老的版本号，如果只传一个参数，则此参数当作版本号处理");
 }
@@ -141,8 +145,7 @@ function addUIClazz() {
                 if (input == "y" || input == "Y") {
                     rule.import[result.class] = result.package;
                     writeRule(rule);
-                }
-                else {
+                } else {
                     console.log(`取消覆盖，类名-包名映射(${result.class}->${result.package})未添加！！`)
                     process.exit(0);
                 }
@@ -166,6 +169,30 @@ function writeRule(rule) {
             process.exit(0);
         }
     })
+}
+
+function watchUIdir() {
+    if (uiwatching)
+        return;
+    uiwatching = true;
+    var dir = cfg.baseUiFileDir;
+    uiwatch.createMonitor(dir, function (monitor) {
+    monitor.on("created", function (f, stat) {
+      // Handle new files
+      parseUI2As([f]);
+      console.log("已转换UI文件>>",f);
+    })
+    monitor.on("changed", function (f, curr, prev) {
+      // Handle file changes
+      parseUI2As([f]);
+      console.log("已转换UI文件>>",f);
+
+    })
+    monitor.on("removed", function (f, stat) {
+      // Handle removed files
+    })
+    // monitor.stop(); // Stop watching
+  })
 }
 
 function listUIFiles(loc, uifliles) {
@@ -256,7 +283,7 @@ function buildApp(cb, ignoreSdk) {
                     encoding: "utf8"
                 });
                 var idx = 0;
-                html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str){
+                html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str) {
                     idx++;
                     return idx == 1 ? `<link rel="stylesheet" type="text/css" href="css/style.css">\n\t<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js' loader='laya'></script>\n` : "";
                 })
@@ -315,7 +342,7 @@ function publishApp() {
             encoding: "utf8"
         });
         var idx = 0;
-        html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str){
+        html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str) {
             idx++;
             return idx == 1 ? `<link rel="stylesheet" type="text/css" href="css/style.css">\n\t<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js?ver=${ver}' loader='laya'></script>\n` : "";
         })
