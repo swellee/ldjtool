@@ -175,6 +175,7 @@ function watchUIdir() {
     if (uiwatching)
         return;
     uiwatching = true;
+    console.log("开始监控UI目录...")
     var dir = cfg.baseUiFileDir;
     uiwatch.createMonitor(dir, function (monitor) {
     monitor.on("created", function (f, stat) {
