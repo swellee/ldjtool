@@ -258,8 +258,9 @@ function buildApp(cb, ignoreSdk) {
                 var idx = 0;
                 html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str){
                     idx++;
-                    return idx == 1 ? `<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js' loader='laya'></script>\n` : "";
+                    return idx == 1 ? `<link rel="stylesheet" type="text/css" href="css/style.css">\n\t<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js' loader='laya'></script>\n` : "";
                 })
+
                 fs.writeFileSync(htmlfile, html);
             }
             cb && cb(prjPath);
@@ -316,7 +317,7 @@ function publishApp() {
         var idx = 0;
         html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str){
             idx++;
-            return idx == 1 ? `<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js?ver=${ver}' loader='laya'></script>\n` : "";
+            return idx == 1 ? `<link rel="stylesheet" type="text/css" href="css/style.css">\n\t<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js?ver=${ver}' loader='laya'></script>\n` : "";
         })
         fs.writeFileSync(htmlfile, html);
 
