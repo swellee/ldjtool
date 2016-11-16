@@ -279,17 +279,10 @@ function buildApp(cb, ignoreSdk) {
             })
 
             if (!ignoreSdk) {
-                var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
-                var html = fs.readFileSync(htmlfile, {
-                    encoding: "utf8"
-                });
-                var idx = 0;
-                html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str) {
-                    idx++;
-                    return idx == 1 ? `<link rel="stylesheet" type="text/css" href="css/style.css">\n\t<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js' loader='laya'></script>\n` : "";
+                routes.util.dust("index", {ver:"0.0.1"}, function(out){
+                    var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
+                    fs.writeFileSync(htmlfile, out);
                 })
-
-                fs.writeFileSync(htmlfile, html);
             }
             cb && cb(prjPath);
         }
@@ -338,17 +331,10 @@ function publishApp() {
         }
 
         console.log("将版本号更新到index.html");
-        var htmlfile = path.resolve(path.dirname(jsFile), "index.html");
-        var html = fs.readFileSync(htmlfile, {
-            encoding: "utf8"
-        });
-        var idx = 0;
-        html = html.replace(/<script.+\/script>[\r\n\t]*/ig, function(str) {
-            idx++;
-            return idx == 1 ? `<link rel="stylesheet" type="text/css" href="css/style.css">\n\t<script src="http://d.hgame.com/loadsdk?v=2"></script>\n\t<script src='main.max.js?ver=${ver}' loader='laya'></script>\n` : "";
+        routes.util.dust("index", {ver:ver}, function(out){
+            var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
+            fs.writeFileSync(htmlfile, out);
         })
-        fs.writeFileSync(htmlfile, html);
-
     }, true);
 
 }
@@ -417,31 +403,9 @@ function writeAP(engineSrc) {
     if (engineSrc.charAt(engineSrc.length - 1) == "/") {
         engineSrc = engineSrc.substr(0, engineSrc.length - 1);
     }
-    var apTpl =
-        `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<actionScriptProperties analytics="false" mainApplicationPath="ghostcoming/Main.as" projectUUID="26d07ab6-eef0-46b3-a3b8-1309d2c02afc" version="11">
-  <compiler additionalCompilerArguments="-locale en_US" advancedTelemetry="false" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="true" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="11.4.0" useApolloConfig="false" useDebugRSLSwfs="true" useFlashSDK="true" verifyDigests="true" warn="true">
-    <compilerSourcePath>
-      <compilerSourcePathEntry kind="1" linkType="1" path="${engineSrc}"/>
-    </compilerSourcePath>
-    <libraryPath defaultLinkType="0">
-      <libraryPathEntry kind="4" path="">
-      </libraryPathEntry>
-    </libraryPath>
-    <sourceAttachmentPath/>
-  </compiler>
-  <applications>
-    <application path="ghostcoming/Main.as"/>
-  </applications>
-  <modules/>
-  <workers/>
-  <buildCSSFiles/>
-  <flashCatalyst validateFlashCatalystCompatibility="false"/>
-</actionScriptProperties>`
-
-    fs.appendFileSync(".actionScriptProperties", apTpl, {
-        flag: "w"
-    });
+    routes.util.dust("ap",{engineSrc:engineSrc}, function(out){
+        fs.appendFileSync(".actionScriptProperties", out, {flag:"w"});
+    })
 }
 
 function modPrjConfig() {

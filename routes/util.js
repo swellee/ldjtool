@@ -3,7 +3,7 @@
  */
 var fs = require("fs");
 var path = require("path");
-
+var dust = require('dustjs-linkedin');
 
 function mkdirs(dirpath, callback) {
 	dirpath = path.resolve(dirpath)
@@ -26,5 +26,22 @@ function errOut(msg) {
     });
 }
 
+function loadDustTemplate(name) {
+    var template = fs.readFileSync(path.resolve(__dirname , "../tpl/" , name + ".dust"), "UTF8").toString();
+    var compiledTemplate = dust.compile(template, name);
+    dust.loadSource(compiledTemplate);
+}
+
+function compileTpl(tplName, data, callback) {
+	loadDustTemplate(tplName);
+	dust.render(tplName,data, function(err, out){
+		if (err){
+			errOut();
+		}
+		callback(out);
+	});
+}
+
 exports.mkdirs = mkdirs;
 exports.err = errOut;
+exports.dust = compileTpl;

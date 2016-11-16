@@ -1,10 +1,11 @@
 {
   "name": "ldjtool",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "scripts": {
     "start": "node bin/ldjtool -w"
   },
   "dependencies": {
+    "dustjs-linkedin": "^2.7.4",
     "node-xlsx": "*",
     "pixl-xml": "*",
     "prompt": "*",
