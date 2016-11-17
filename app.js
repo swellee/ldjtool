@@ -253,7 +253,7 @@ function buildApp(cb, ignoreSdk) {
         cfg.layaPara += ";windowshow=false" //非windows，不显示gui
     }
 
-    var cmd = cfg.layaCmd + " '" + path.join(wineVpath + prjPath, ".actionScriptProperties") + cfg.layaPara + "'";
+    var cmd = cfg.layaCmd + ' "' + path.join(wineVpath + prjPath, ".actionScriptProperties") + cfg.layaPara + '"';
     sh.exec(cmd, { maxBuffer: 2560 * 2560 }, function(err, stdout, stderr) {
         if (err) {
             console.log(err);
