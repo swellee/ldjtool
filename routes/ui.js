@@ -98,6 +98,25 @@ function copyres(res) {
     var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
     var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
     util.mkdirs(path.dirname(toP), function() {
+        var cmd = os.platform() == "win32" ? "copy" : "cp";
+        try {
+            require("child_process").execSync(cmd,[resP, toP]);
+            copyres(res);
+        } catch (e) {
+            console.log("拷贝资源" + resP + "出错")
+            copyres(res);
+        }
+    })
+}
+
+function copyres(res) {
+    if (res.length == 0)
+        return;
+    var r = res.pop();
+    var rP = r.replace(/("|')/g, '');
+    var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
+    var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
+    util.mkdirs(path.dirname(toP), function() {
         try {
             fs.appendFileSync(toP, fs.readFileSync(resP, { encoding: null }), { encoding: null, flag: "w" });
             copyres(res);
