@@ -1,5 +1,5 @@
 **ludingji tool**
-	基于laya的h5游戏，私用工具集合
+	基于laya的h5游戏ludingji的私用工具集合
 #install
 	npm i ldjtool -g
 

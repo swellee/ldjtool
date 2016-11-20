@@ -361,7 +361,7 @@ function modConfig() {
         for (var mk in result) {
             cfg[mk] = result[mk];
         }
-        var cpath = path.resolve(__dirname, "./bin/config.json")
+        var cpath = pathSep(path.resolve(__dirname, "./bin/config.json"));
             //写入config.json
         fs.writeFile(userCfgPath, JSON.stringify(cfg), function(err) {
             if (err) {
@@ -399,7 +399,7 @@ function createPrjAP() {
 }
 
 function writeAP(engineSrc) {
-    engineSrc = engineSrc.replace(/\\+/g, "/").replace(/[\r\n]/, "");
+    engineSrc = pathSep(engineSrc);
     if (engineSrc.charAt(engineSrc.length - 1) == "/") {
         engineSrc = engineSrc.substr(0, engineSrc.length - 1);
     }
@@ -412,53 +412,62 @@ function modPrjConfig() {
     var cwd = process.cwd();
     console.log(`当前路径为${cwd},是否要修改“版本号”、“背景”等项目配置，y/n？`);
     process.stdin.resume();
-    process.stdin.on("data", function(chunk) {
+    process.stdin.once("data", function(chunk) {
         if (chunk) {
-            chunk = chunk.toString().replace(/[\r\n]/, "");
+            chunk = pathSep(chunk.toString());
         }
         if (chunk != "y" && chunk != "Y") {
             console.log("已取消");
-            return;
+            process.exit();
         }
-
-        var cpath = ".prjCfg";
-        //第一次，生成项目信息
-        try {
-            fs.accessSync(cpath, fs.R_OK);
-        } catch (err) {
-            var pcfg = { name: "鹿鼎记", version: "0.0.1" };
-            fs.appendFileSync(cpath, JSON.stringify(pcfg))
+        else {
+            doModPrjCfg();
         }
-
-        var oldCfg = JSON.parse(fs.readFileSync(cpath, "utf8"));
-
-        var schema = {
-            properties: {}
-        };
-        for (key in oldCfg) {
-            schema.properties[key] = {
-                message: oldCfg[key],
-                default: oldCfg[key]
-            }
-        }
-
-        prompt.start();
-        prompt.get(schema, function(err, result) {
-            for (var mk in result) {
-                oldCfg[mk] = result[mk]
-            }
-            fs.writeFile(cpath, JSON.stringify(oldCfg), function(err) {
-                if (err) {
-                    routes.util.err(err);
-                } else {
-                    process.exit(0);
-                }
-            })
-
-        })
 
     });
 
+}
+
+function doModPrjCfg() {
+    var cpath = ".prjCfg";
+    //第一次，生成项目信息
+    try {
+        fs.accessSync(cpath, fs.R_OK);
+    } catch (err) {
+        var pcfg = { version: "0.0.1" };
+        fs.appendFileSync(cpath, JSON.stringify(pcfg))
+    }
+
+    var oldCfg = JSON.parse(fs.readFileSync(cpath, "utf8"));
+
+    var schema = {
+        properties: {}
+    };
+    for (key in oldCfg) {
+        schema.properties[key] = {
+            message: key,
+            default: oldCfg[key]
+        }
+    }
+
+    prompt.start();
+    prompt.get(schema, function(err, result) {
+        for (var mk in result) {
+            oldCfg[mk] = result[mk]
+        }
+        fs.writeFile(cpath, JSON.stringify(oldCfg), function(err) {
+            if (err) {
+                routes.util.err(err);
+            } else {
+                process.exit(0);
+            }
+        })
+
+    })
+}
+
+function pathSep(p) {
+    return p.replace(/\\+/g, "/").replace(/[\r\n\s]+$/,"");
 }
 
 
