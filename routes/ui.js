@@ -10,6 +10,7 @@ var os = require("os");
 var cfg = require(path.join(os.homedir(), ".ldjtoolCfg.json"));
 var rule = require(path.join(os.homedir(), ".ldjtoolUIRule.json"));
 var baseUiPackDir = path.resolve(cfg.clientDir, "src/ghostcoming/modules");
+var sh = require("child_process");
 
 var paras = process.argv;
 var file = paras.pop();
@@ -90,41 +91,30 @@ function parseUI(file) {
 
 }
 
-function copyres(res) {
-    if (res.length == 0)
+function copyres(uires) {
+    if (uires.length == 0)
         return;
-    var r = res.pop();
+    var r = uires.pop();
     var rP = r.replace(/("|')/g, '');
     var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
     var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
     util.mkdirs(path.dirname(toP), function() {
-        var cmd = os.platform() == "win32" ? "copy" : "cp";
-        try {
-            require("child_process").execSync(cmd,[resP, toP]);
-            copyres(res);
-        } catch (e) {
-            console.log("拷贝资源" + resP + "出错")
-            copyres(res);
-        }
-    })
-}
 
-function copyres(res) {
-    if (res.length == 0)
-        return;
-    var r = res.pop();
-    var rP = r.replace(/("|')/g, '');
-    var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
-    var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
-    util.mkdirs(path.dirname(toP), function() {
-        try {
-            fs.appendFileSync(toP, fs.readFileSync(resP, { encoding: null }), { encoding: null, flag: "w" });
-            copyres(res);
-        } catch (e) {
-            console.log("拷贝资源" + resP + "出错")
-            copyres(res);
-        }
-    })
+        var cmd = "copy";
+        sh.exec("dir", function(err, stdout, stderr) {
+            if (err) {
+                cmd = "cp"; //unix
+            }
+            try {
+                sh.spawnSync(cmd, [resP, toP]);
+                copyres(uires);
+            } catch (e) {
+                console.log("拷贝资源" + resP + "出错",e)
+                copyres(uires);
+            }
+
+        })
+    });
 }
 
 function getPackName(file, addition) {
