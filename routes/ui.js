@@ -83,38 +83,37 @@ function parseUI(file) {
     });
 
     //拷贝使用了的资源到bin/h5/assets/下对应模块目录
-    var resKeys = [];
+    var cmd = "cp";
+    sh.exec("ls", function(err, stdout, stderr) {
+        if (err) {
+            cmd = "copy"; //windows
+        }
+    });
     for (var key in res) {
-        resKeys.push(key);
+        var rP = key.replace(/("|')/g, '');
+        var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
+        var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
+        //如果是btn，则尝试拷贝其多态皮肤
+        if (resP.indexOf("btn_") != -1) {
+            var bsname = path.basename(resP);
+            var ddname = path.dirname(resP);
+            var bsname2 = bsname.replace(/\d/, function(str) {
+                return str == "0" ? "1" : "0";
+            });
+            var btnres2 = resP.replace(bsname, bsname2);
+            var btnto2 = toP.replace(bsname, bsname2);
+            copyres(cmd, btnres2, btnto2);
+        }
+        //
+        copyres(cmd, resP, toP);
     }
-    copyres(resKeys);
 
 }
 
-function copyres(uires) {
-    if (uires.length == 0)
-        return;
-    var r = uires.pop();
-    var rP = r.replace(/("|')/g, '');
-    var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
-    var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
-    util.mkdirs(path.dirname(toP), function() {
-
-        var cmd = "copy";
-        sh.exec("dir", function(err, stdout, stderr) {
-            if (err) {
-                cmd = "cp"; //unix
-            }
-            try {
-                sh.spawnSync(cmd, [resP, toP]);
-                copyres(uires);
-            } catch (e) {
-                console.log("拷贝资源" + resP + "出错",e)
-                copyres(uires);
-            }
-
-        })
-    });
+function copyres(cmd, resP, toP) {
+    try { sh.execSync(`${cmd} ${resP} ${toP}`); } catch (e) {
+        console.log(`警告：拷贝UI文件>>${file}的资源出错, 你可能需要手动拷贝该资源到客户端项目下的同名目录里！`)
+    }
 }
 
 function getPackName(file, addition) {
