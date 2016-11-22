@@ -346,6 +346,9 @@ function parseNode(nodeLists, imports, res, declares, createStrObj, usedTempDefi
                 usedTempDefine[dfine] = true;
             }
             createStrObj.str += "\t\t\t" + (skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "();\n";
+            if (declares.hasOwnProperty(dfine)) {
+                createStrObj.str += "\t\t\t" + dfine + ".name = " + quote(dfine) + ";\n";
+            }
         }
 
         //调用函数
