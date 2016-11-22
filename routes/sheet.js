@@ -174,7 +174,7 @@ function mergeToJson(sht, name, fl) {
 
 function parseType(type, data) {
     if (type.indexOf("STRING") != -1) {
-        return data + "";
+        return data? (data + ""):"";
     } else if (type.indexOf("INT") != -1 || type.indexOf("NUMBER") != -1) {
         return parseInt(data);
     }
