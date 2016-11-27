@@ -20,6 +20,10 @@ parseUI(file);
 
 
 function parseUI(file) {
+    if (path.extname(file) != ".xml") {
+        process.send("跳过非xml文件" + file);
+        return;
+    }
     actTask++;
     var content = fs.readFileSync(file, {
         encoding: "utf8"
@@ -34,8 +38,8 @@ function parseUI(file) {
             preserveDocumentNode: true
         });
     } catch (e) {
-        process.send("文件内容异常：" + file + "\n" + e);
-        process.exit(1);
+        process.send("已跳过异常文件：" + file + "\n" + e);
+        return;
     }
 
     ///-----------------解析分类----------------------------------
@@ -97,7 +101,7 @@ function parseUI(file) {
         if (resP.indexOf("btn_") != -1) {
             var bsname = path.basename(resP);
             var ddname = path.dirname(resP);
-            var bsname2 = bsname.replace(/\d/, function(str) {
+            var bsname2 = bsname.replace(/\d$/, function(str) {
                 return str == "0" ? "1" : "0";
             });
             var btnres2 = resP.replace(bsname, bsname2);
@@ -419,11 +423,14 @@ function recProps(attKey, attValue, props, res, force) {
     //---------------------------
     else {
         //作为字符串处理
+        attValue = attValue.replace(/\s/g, '');
         if (attKey == "sizeGrid") {
             //编辑器里是 左 上 右 下，需要转成 上 右 下左
             var grids = attValue.split(",");
             if (grids.length > 3)
                 attValue = quote([grids[1], grids[2], grids[3], grids[0]].join(","));
+            else
+                attValue = quote(attValue);
         } else if (attKey == "skin") {
             //标记资源
             var attFix = attValue.split(".");

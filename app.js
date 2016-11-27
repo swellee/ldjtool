@@ -225,7 +225,8 @@ function parseUI2As(uifliles) {
                 if (m == "ok") {
                     parseUI2As(uifliles);
                 } else {
-                    console.log("异常：", m)
+                    console.log(m);
+                    parseUI2As(uifliles);
                 }
             })
         } catch (e) {
