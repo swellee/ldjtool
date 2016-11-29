@@ -280,7 +280,7 @@ function buildApp(cb, ignoreSdk) {
             })
 
             if (!ignoreSdk) {
-                routes.util.dust("index", {ver:"0.0.1"}, function(out){
+                routes.util.dust("index", {ver:"0.0.1",debug:true}, function(out){
                     var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
                     fs.writeFileSync(htmlfile, out);
                 })
@@ -332,7 +332,7 @@ function publishApp() {
         }
 
         console.log("将版本号更新到index.html");
-        routes.util.dust("index", {ver:ver}, function(out){
+        routes.util.dust("index", {ver:ver,debug:false}, function(out){
             var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
             fs.writeFileSync(htmlfile, out);
         })

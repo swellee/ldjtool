@@ -15,6 +15,6 @@
 <body style='margin:0;overflow:none;overflow-x:hidden;overflow-y:hidden;background-color: #000;'>
 	<script src='http://d.hgame.com/loadsdk?v=2'></script>
 	<script src='Main.max.js?ver={ver}' loader='laya'></script>
-	<div id="ver">version:{ver}</div>
+	<div id="ver" data-ver='{ver}' data-debug='{debug}'>version:{ver}</div>
 </body>
 </html>
