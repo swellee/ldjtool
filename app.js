@@ -319,7 +319,9 @@ function publishApp() {
         var minTool = require("uglify-js");
         var jsFile = path.resolve(prjPath, "bin/h5/main.max.js");
         console.log(jsFile);
-        var result = minTool.minify(jsFile);
+        var result = minTool.minify(jsFile,{mangle: {
+            keep_fnames: true//加上这个,才能在压缩后保留正确的类名
+        }});
         fs.writeFileSync(jsFile, result.code);
         var depJsDir = path.resolve(prjPath, "bin/h5/js");
         var depJsfiles = fs.readdirSync(depJsDir);
@@ -327,7 +329,9 @@ function publishApp() {
             var file = depJsfiles[i];
             var flilePath = path.resolve(depJsDir, file);
             console.log(flilePath)
-            result = minTool.minify(flilePath);
+            result = minTool.minify(flilePath,{mangle: {
+                keep_fnames: true
+            }});
             fs.writeFileSync(flilePath,result.code);
         }
 
