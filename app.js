@@ -328,7 +328,7 @@ function publishApp() {
             var flilePath = path.resolve(depJsDir, file);
             console.log(flilePath)
             result = minTool.minify(flilePath);
-            fs.writeFileSync(flilePath);
+            fs.writeFileSync(flilePath,result.code);
         }
 
         console.log("将版本号更新到index.html");
