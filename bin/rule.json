@@ -4,17 +4,17 @@
     "Text":"laya.display",
     "Input":"laya.display",
     "Sprite":"laya.display",
-    "View": "ghostcoming.core",
-    "ItemRenderer": "ghostcoming.core",
-    "Rect": "ghostcoming.ui",
-    "Icon": "ghostcoming.ui",
-    "Button": "ghostcoming.ui",
-    "BitmapNum": "ghostcoming.ui",
-    "ButtonBar": "ghostcoming.ui",
-    "CheckButton": "ghostcoming.ui",
-    "HeroCard": "ghostcoming.ui",
-    "StarRate": "ghostcoming.ui",
-    "StarRate2": "ghostcoming.ui"
+    "View": "app.core",
+    "ItemRenderer": "app.core",
+    "Rect": "app.ui",
+    "Icon": "app.ui",
+    "Button": "app.ui",
+    "BitmapNum": "app.ui",
+    "ButtonBar": "app.ui",
+    "CheckButton": "app.ui",
+    "HeroCard": "app.ui",
+    "StarRate": "app.ui",
+    "StarRate2": "app.ui"
   },
   "specialAttr": {
     "name":{

@@ -9,7 +9,7 @@ var util = require("./util");
 var os = require("os");
 var cfg = require(path.join(os.homedir(), ".ldjtoolCfg.json"));
 var rule = require(path.join(os.homedir(), ".ldjtoolUIRule.json"));
-var baseUiPackDir = path.resolve(cfg.clientDir, "src/ghostcoming/modules");
+var baseUiPackDir = path.resolve(cfg.clientDir, "src/app/modules");
 var sh = require("child_process");
 
 var paras = process.argv;
