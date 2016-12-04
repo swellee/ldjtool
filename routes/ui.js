@@ -198,6 +198,9 @@ function listNodes(parentName, nodeName, nodeData, list) {
         if (nodeData["_Attribs"]["var"]) {
             pName = nodeData["_Attribs"]["var"];
         }
+        else {
+            pName = pName.toLowerCase();
+        }
 
     }
 
