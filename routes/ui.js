@@ -177,29 +177,20 @@ function quote(str) {
 }
 
 function listNodes(parentName, nodeName, nodeData, list) {
-    var pName = parentName == "this" ? parentName : nodeName;
-    if (nodeData["_Attribs"]) {
+    //作为子类导出？   
+    if (nodeData["_Attribs"] && nodeData["_Attribs"]["name"]) {
         //需要作为子类导出的节点数据
-        if (nodeData["_Attribs"]["name"]) {
-            var nm = nodeData["_Attribs"]["name"];
-            if (rule.specialAttr.name[nodeName]) {
-                var nameRule = rule.specialAttr.name;
-                if (nameRule[nodeName] && nameRule[nodeName]["type"] && nameRule[nodeName]["type"] == "childClass") {
-                    list.push({
-                        parentName: parentName,
-                        nodeName: nodeName,
-                        nodeData: nodeData
-                    });
-                    return;
-                }
+        var nm = nodeData["_Attribs"]["name"];
+        if (rule.specialAttr.name[nodeName]) {
+            var nameRule = rule.specialAttr.name;
+            if (nameRule[nodeName] && nameRule[nodeName]["type"] && nameRule[nodeName]["type"] == "childClass") {
+                list.push({
+                    parentName: parentName,
+                    nodeName: nodeName,
+                    nodeData: nodeData
+                });
+                return;
             }
-        }
-        //本节点有变量名
-        if (nodeData["_Attribs"]["var"]) {
-            pName = nodeData["_Attribs"]["var"];
-        }
-        else {
-            pName = pName.toLowerCase();
         }
 
     }
@@ -221,16 +212,22 @@ function listNodes(parentName, nodeName, nodeData, list) {
         //列表
         if (node.constructor == Array) {
             for (var i in node) {
-                listNodes(pName, key, node[i], list);
+                listNodes(parentName, key, node[i], list);
             }
         }
         //其他元素
         else {
+            var pName = key.toLowerCase();
+            if (node["_Attribs"] && node["_Attribs"]["var"]) {
+                pName = node["_Attribs"]["var"];
+            }
             listNodes(pName, key, node, list);
         }
     }
 
 }
+
+
 
 function parseNode(nodeLists, imports, res, declares, createStrObj, usedTempDefine) {
     nodeLists.sort(function(a, b) {
@@ -489,7 +486,7 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
         if (err) {
             var logicOut = getPackName(filePath, '') +
                 getClassHead(fileName, clzNm, "public") +
-                getConstructor(fileName, "createChildren();") +
+                getConstructor(fileName) +
                 "\n\t}" //class over
                 + "\n}" //pack over;
 
@@ -518,3 +515,5 @@ function writeTo(filePath, data) {
         })
     })
 }
+
+module.exports = parseUI;

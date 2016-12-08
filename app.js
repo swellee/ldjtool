@@ -1,14 +1,16 @@
 /**
  * Created by swellee on 2016/9/18.
  */
+var packInfo = require("./package.json");
 var fs = require("fs");
 var os = require("os");
 var path = require("path");
 var prompt = require("prompt");
 var sh = require("child_process");
 var fork = sh.fork;
-var userCfgPath = path.join(os.homedir(), ".ldjtoolCfg.json");
-var userUIRulePath = path.join(os.homedir(), ".ldjtoolUIRule.json");
+var userCfgDir = path.join(os.homedir(), ".ldjtool");
+var userCfgPath = path.join(userCfgDir, "cfg.json");
+var userUIRulePath = path.join(userCfgDir, "ui_rule.json");
 var toolCfg = require("./bin/config");
 var cfg = toolCfg;
 const uiwatch = require("watch");
@@ -16,6 +18,7 @@ var uiwatching = false;
 
 var options = {
     "-h": showHelp,
+    "-c": modConfig,
     "-a": createPrjAP,
     "-u": parseUI,
     "-ux": addUIClazz,
@@ -32,46 +35,61 @@ var cmds;
 var routes = {};
 
 function main(argv) {
-    try {
-        fs.accessSync(userCfgPath, fs.R_OK);
-        var uCfg = require(userCfgPath);
-        var match = true;
-        for (var key in cfg) {
-            if (!uCfg.hasOwnProperty(key)) {
-                match = false;
-                uCfg[key] = cfg[key]; //没有的key，先添加上
-            } else {
-                cfg[key] = uCfg[key];
-            }
-        }
-
-        if (!match)
-            throw new Error("配置格式升级");
-    } catch (e) {
-        console.log(e + '\n需要重新配置工具参数。。。');
-        modConfig();
-        return;
-    }
-
-    try {
-        fs.accessSync(userUIRulePath, fs.R_OK);
-    } catch (e) {
-        //copy ui rule file
-        fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
-    }
-
-
-    cmds = argv;
     //initRoutes
     routes.ui = path.resolve(__dirname, "./routes/ui.js"); //use as fork
     routes.util = require("./routes/util");
     routes.sheet = require("./routes/sheet");
+    //是否需要强制升级配置
+    var needUpCfg = packInfo.needUpCfg;
+    if (needUpCfg) {
+        rmCfg(userCfgDir);
+        routes.util.mkdirs(userCfgDir);
+    }
 
-    //parse args
-    cmds.shift(); //del node
-    cmds.shift(); //del app.js
-    var cmd = cmds.shift(); //command
-    routeCmd(cmd);
+    routes.util.mkdirs(userCfgDir, function() {
+        try {
+            fs.accessSync(userCfgPath, fs.R_OK);
+            var uCfg = require(userCfgPath);
+            var match = true;
+            for (var key in cfg) {
+                if (!uCfg.hasOwnProperty(key)) {
+                    match = false;
+                    uCfg[key] = cfg[key]; //没有的key，先添加上
+                } else {
+                    cfg[key] = uCfg[key];
+                }
+            }
+
+            if (!match)
+                throw new Error("配置格式升级");
+        } catch (e) {
+            console.log('需要重新配置工具参数。。。');
+            modConfig();
+            return;
+        }
+
+        try {
+            fs.accessSync(userUIRulePath, fs.R_OK);
+        } catch (e) {
+            //copy ui rule file
+            fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
+        }
+
+        cmds = argv;
+
+        //parse args
+        cmds.shift(); //del node
+        cmds.shift(); //del app.js
+        var cmd = cmds.shift(); //command
+        routeCmd(cmd);
+    });
+
+}
+
+function rmCfg(path) {
+    try {
+        fs.rmdirSync(path);
+    } catch (e) {}
 }
 
 function routeCmd(cmd) {
@@ -83,8 +101,10 @@ function routeCmd(cmd) {
 }
 
 function showHelp() {
-    console.log("使用说明：\n\
+    console.log("当前版本：" + packInfo.version + "\n" +
+        "使用说明：\n\
     ldjtool -h : 显示该使用说明;\n\
+    ldjtool -c : 重新配置工具参数;\n\
     ldjtool -a [laya_engine_src_path]: 在当前目录生成项目使用的.actionScriptProperties; -a后跟的参数为laya引擎的src代码路径，如果未给，则启用输入模式录入\n\
     ldjtool -m : 在项目目录下使用此命令，可更改项目的一些配置（如版本号等）\n\
     ldjtool -x [xlsx_in_path][xlsx_out_path]: 将配表转换成程序使用的文件，可选参数xlsx_in_path表示要处理的配表文件夹路径（不传则使用ldjtool -c配置的配表目录），\n\
@@ -177,23 +197,23 @@ function watchUIdir() {
     uiwatching = true;
     console.log("开始监控UI目录...")
     var dir = cfg.baseUiFileDir;
-    uiwatch.createMonitor(dir, function (monitor) {
-    monitor.on("created", function (f, stat) {
-      // Handle new files
-      parseUI2As([f]);
-      console.log("已转换UI文件>>",f);
-    })
-    monitor.on("changed", function (f, curr, prev) {
-      // Handle file changes
-      parseUI2As([f]);
-      console.log("已转换UI文件>>",f);
+    uiwatch.createMonitor(dir, function(monitor) {
+        monitor.on("created", function(f, stat) {
+            // Handle new files
+            parseUI2As([f]);
+            console.log("已转换UI文件>>", f);
+        })
+        monitor.on("changed", function(f, curr, prev) {
+            // Handle file changes
+            parseUI2As([f]);
+            console.log("已转换UI文件>>", f);
 
+        })
+        monitor.on("removed", function(f, stat) {
+                // Handle removed files
+            })
+            // monitor.stop(); // Stop watching
     })
-    monitor.on("removed", function (f, stat) {
-      // Handle removed files
-    })
-    // monitor.stop(); // Stop watching
-  })
 }
 
 function listUIFiles(loc, uifliles) {
@@ -280,7 +300,7 @@ function buildApp(cb, ignoreSdk) {
             })
 
             if (!ignoreSdk) {
-                routes.util.dust("index", {ver:"0.0.1",debug:true}, function(out){
+                routes.util.dust("index", { ver: "0.0.1", debug: true }, function(out) {
                     var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
                     fs.writeFileSync(htmlfile, out);
                 })
@@ -319,9 +339,11 @@ function publishApp() {
         var minTool = require("uglify-js");
         var jsFile = path.resolve(prjPath, "bin/h5/main.max.js");
         console.log(jsFile);
-        var result = minTool.minify(jsFile,{mangle: {
-            keep_fnames: true//加上这个,才能在压缩后保留正确的类名
-        }});
+        var result = minTool.minify(jsFile, {
+            mangle: {
+                keep_fnames: true //加上这个,才能在压缩后保留正确的类名
+            }
+        });
         fs.writeFileSync(jsFile, result.code);
         var depJsDir = path.resolve(prjPath, "bin/h5/js");
         var depJsfiles = fs.readdirSync(depJsDir);
@@ -329,14 +351,16 @@ function publishApp() {
             var file = depJsfiles[i];
             var flilePath = path.resolve(depJsDir, file);
             console.log(flilePath)
-            result = minTool.minify(flilePath,{mangle: {
-                keep_fnames: true
-            }});
-            fs.writeFileSync(flilePath,result.code);
+            result = minTool.minify(flilePath, {
+                mangle: {
+                    keep_fnames: true
+                }
+            });
+            fs.writeFileSync(flilePath, result.code);
         }
 
         console.log("将版本号更新到index.html");
-        routes.util.dust("index", {ver:ver,debug:false}, function(out){
+        routes.util.dust("index", { ver: ver, debug: false }, function(out) {
             var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
             fs.writeFileSync(htmlfile, out);
         })
@@ -367,7 +391,7 @@ function modConfig() {
             cfg[mk] = result[mk];
         }
         var cpath = pathSep(path.resolve(__dirname, "./bin/config.json"));
-            //写入config.json
+        //写入config.json
         fs.writeFile(userCfgPath, JSON.stringify(cfg), function(err) {
             if (err) {
                 routes.util.err(err);
@@ -408,8 +432,8 @@ function writeAP(engineSrc) {
     if (engineSrc.charAt(engineSrc.length - 1) == "/") {
         engineSrc = engineSrc.substr(0, engineSrc.length - 1);
     }
-    routes.util.dust("ap",{engineSrc:engineSrc}, function(out){
-        fs.appendFileSync(".actionScriptProperties", out, {flag:"w"});
+    routes.util.dust("ap", { engineSrc: engineSrc }, function(out) {
+        fs.appendFileSync(".actionScriptProperties", out, { flag: "w" });
     })
 }
 
@@ -424,8 +448,7 @@ function modPrjConfig() {
         if (chunk != "y" && chunk != "Y") {
             console.log("已取消");
             process.exit();
-        }
-        else {
+        } else {
             doModPrjCfg();
         }
 
@@ -472,7 +495,7 @@ function doModPrjCfg() {
 }
 
 function pathSep(p) {
-    return p.replace(/\\+/g, "/").replace(/[\r\n\s]+$/,"");
+    return p.replace(/\\+/g, "/").replace(/[\r\n\s]+$/, "");
 }
 
 
