@@ -7,8 +7,11 @@ var path = require("path");
 var fs = require("fs");
 var util = require("./util");
 var os = require("os");
-var cfg = require(path.join(os.homedir(), ".ldjtoolCfg.json"));
-var rule = require(path.join(os.homedir(), ".ldjtoolUIRule.json"));
+
+var userCfgDir = path.join(os.homedir(), ".ldjtool");
+var cfg = require(path.join(userCfgDir, "cfg.json"));
+var rule = require(path.join(userCfgDir, "ui_rule.json"));
+
 var baseUiPackDir = path.resolve(cfg.clientDir, "src/app/modules");
 var sh = require("child_process");
 
