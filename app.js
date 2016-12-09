@@ -44,6 +44,16 @@ function main(argv) {
 
     routes.util.mkdirs(userCfgDir, function() {
         try {
+            fs.accessSync(userUIRulePath, fs.R_OK);
+            if (needUpCfg) {
+                fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
+            }
+        } catch (e) {
+            //copy ui rule file
+            fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
+        }
+
+        try {
             fs.accessSync(userCfgPath, fs.R_OK);
             var uCfg = require(userCfgPath);
             var match = true;
@@ -64,12 +74,6 @@ function main(argv) {
             return;
         }
 
-        try {
-            fs.accessSync(userUIRulePath, fs.R_OK);
-        } catch (e) {
-            //copy ui rule file
-            fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
-        }
 
         cmds = argv;
 
@@ -388,7 +392,7 @@ function modConfig() {
                 routes.util.err(err);
             } else {
                 packInfo.needUpCfg = false;
-                fs.appendFileSync(path.resolve(__dirname, "package.json"), JSON.stringify(packInfo), {flag:"w"});
+                fs.appendFileSync(path.resolve(__dirname, "package.json"), JSON.stringify(packInfo), { flag: "w" });
                 process.exit(0);
             }
         })
