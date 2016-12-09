@@ -12,6 +12,7 @@ var userCfgDir = path.join(os.homedir(), ".ldjtool");
 var userCfgPath = path.join(userCfgDir, "cfg.json");
 var userUIRulePath = path.join(userCfgDir, "ui_rule.json");
 var toolCfg = require("./bin/config");
+var ruleCfg = require("./bin/rule.json");
 var cfg = toolCfg;
 const uiwatch = require("watch");
 var uiwatching = false;
@@ -40,12 +41,11 @@ function main(argv) {
     routes.util = require("./routes/util");
     routes.sheet = require("./routes/sheet");
     //是否需要强制升级配置
-    var needUpCfg = packInfo.needUpCfg;
-
     routes.util.mkdirs(userCfgDir, function() {
         try {
             fs.accessSync(userUIRulePath, fs.R_OK);
-            if (needUpCfg) {
+            var localUiRule = require(userUIRulePath);
+            if (localUiRule.ver != packInfo.uiRuleVer) {
                 fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
             }
         } catch (e) {
@@ -66,7 +66,8 @@ function main(argv) {
                 }
             }
 
-            if (!match || needUpCfg)
+
+            if (!match || uCfg.ver != packInfo.cfgVer)
                 throw new Error("配置格式升级");
         } catch (e) {
             console.log('需要重新配置工具参数。。。');
@@ -391,8 +392,6 @@ function modConfig() {
             if (err) {
                 routes.util.err(err);
             } else {
-                packInfo.needUpCfg = false;
-                fs.appendFileSync(path.resolve(__dirname, "package.json"), JSON.stringify(packInfo), { flag: "w" });
                 process.exit(0);
             }
         })
