@@ -1,9 +1,10 @@
 {
   "import": {
     "default":"laya.ui",
-    "Text":"laya.display",
+    "Label":"n2laya.ui",
+    "List":"n2laya.ui",
     "Input":"laya.display",
-    "Sprite":"laya.display",
+    "Sprite":"n2laya.ui",
     "View": "app.core",
     "ItemRenderer": "app.core",
     "Rect": "app.ui",
@@ -52,8 +53,7 @@
   },
   "specialClass":{
     "Container": "Sprite",
-    "Tab": "ButtonBar",
-    "Label": "Text"
+    "Tab": "ButtonBar"
   },
   "overrideCreateChildren":{
     "ItemRenderer":true

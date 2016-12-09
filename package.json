@@ -1,7 +1,7 @@
 {
   "name": "ldjtool",
-  "version": "0.8.1",
-  "needUpCfg": false,
+  "version": "0.8.2",
+  "needUpCfg": true,
   "scripts": {
     "start": "node bin/ldjtool -w"
   },

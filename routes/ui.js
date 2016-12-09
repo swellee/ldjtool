@@ -57,7 +57,7 @@ function parseUI(file) {
     var rootNode = xmlData[rootName];
     rootNode["_Attribs"].var = '';
     var lists = [];
-    listNodes("this", rootName, rootNode, lists);
+    listNodes("this", rootName, rootNode, lists, rootName);
     parseNode(lists, imports, res, declares, creatObjs, usedTempDefine);
     ///-----------------解析完成----------------------------------
     ///-----------------按结构导出--------------------------------
@@ -176,8 +176,9 @@ function quote(str) {
     return "'" + str + "'";
 }
 
-function listNodes(parentName, nodeName, nodeData, list) {
+function listNodes(parentName, nodeName, nodeData, list, rootName) {
     //作为子类导出？   
+    parentName = parentName == rootName.toLowerCase() ? "this" : parentName;
     if (nodeData["_Attribs"] && nodeData["_Attribs"]["name"]) {
         //需要作为子类导出的节点数据
         var nm = nodeData["_Attribs"]["name"];
@@ -195,34 +196,30 @@ function listNodes(parentName, nodeName, nodeData, list) {
 
     }
 
-    //正常的节点数据
-    for (var key in nodeData) {
-        //本节点数据
-        if (key == "_Attribs") {
-            list.push({
-                parentName: parentName,
-                nodeName: nodeName,
-                nodeData: nodeData
-            });
-            continue;
+    if (nodeData["_Attribs"]) {
+        list.push({
+            parentName: parentName,
+            nodeName: nodeName,
+            nodeData: nodeData
+        });
+
+        var pName = nodeData["_Attribs"]["var"] || nodeName.toLowerCase();
+        for(var key in nodeData) {
+            if (key == "_Attribs"){
+                continue;
+            }
+
+            var node = nodeData[key];
+            if (node.constructor == Array) {
+                for(var i in node) {
+                    listNodes(pName, key, node[i], list, rootName);
+                }
+            }
+            else {
+                listNodes(pName, key, node, list, rootName);
+            }
         }
 
-        var node = nodeData[key];
-        //子节点
-        //列表
-        if (node.constructor == Array) {
-            for (var i in node) {
-                listNodes(parentName, key, node[i], list);
-            }
-        }
-        //其他元素
-        else {
-            var pName = key.toLowerCase();
-            if (node["_Attribs"] && node["_Attribs"]["var"]) {
-                pName = node["_Attribs"]["var"];
-            }
-            listNodes(pName, key, node, list);
-        }
     }
 
 }
@@ -463,7 +460,7 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
     var lists = [];
     nodeData["_Attribs"].name = rootName;
     nodeData["_Attribs"].var = '';
-    listNodes("this", rootName, nodeData, lists);
+    listNodes("this", rootName, nodeData, lists, rootName);
     parseNode(lists, imports, res, declares, creatObjs, usedTempDefine);
     ///-----------------按结构导出UI类--------------------------------
     var clzNm = fileName + "UI";

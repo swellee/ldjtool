@@ -41,10 +41,6 @@ function main(argv) {
     routes.sheet = require("./routes/sheet");
     //是否需要强制升级配置
     var needUpCfg = packInfo.needUpCfg;
-    if (needUpCfg) {
-        rmCfg(userCfgDir);
-        routes.util.mkdirs(userCfgDir);
-    }
 
     routes.util.mkdirs(userCfgDir, function() {
         try {
@@ -60,7 +56,7 @@ function main(argv) {
                 }
             }
 
-            if (!match)
+            if (!match || needUpCfg)
                 throw new Error("配置格式升级");
         } catch (e) {
             console.log('需要重新配置工具参数。。。');
@@ -86,11 +82,6 @@ function main(argv) {
 
 }
 
-function rmCfg(path) {
-    try {
-        fs.rmdirSync(path);
-    } catch (e) {}
-}
 
 function routeCmd(cmd) {
     if (options[cmd]) {
@@ -396,6 +387,8 @@ function modConfig() {
             if (err) {
                 routes.util.err(err);
             } else {
+                packInfo.needUpCfg = false;
+                fs.appendFileSync(path.resolve(__dirname, "package.json"), JSON.stringify(packInfo), {flag:"w"});
                 process.exit(0);
             }
         })
