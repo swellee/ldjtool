@@ -1,0 +1,29 @@
+{?ui}//This code is auto generated and will be replaced, so don't edit it.{~n}{/ui}
+package {pack}{~lb}{~n}
+{! imports !}
+{#imports}import {.|s};{~n}{/imports}
+{! class_begin !}
+public class {className|s} extends {rootName|s} {~lb}{~n}
+{! declares !}
+{#declares}	protected var {dfine|s}:{type|s};{~n}{/declares}
+{! constructor !}
+{~s}{~s}{~s}{~s}public function {className|s}(){~lb}{~n}
+{~s}{~s}{~s}{~s}{~s}{~s}{~s}{~s}super();{~n}
+{?superCall}		{superCall|s}();{~n}{/superCall}
+{~s}{~s}{~s}{~s}{~rb}{~n}
+{~n}
+{! createChildren !}
+{?ui}
+{?createFunType}	{createFunType}{:else}	protected{/createFunType} function createChildren():void{~lb}{~n}
+{#creates}		{.|s};{~n}{/creates}
+{~s}{~s}{~s}{~s}{~rb}{~n}
+{/ui}
+
+{! res !}
+{?genRes}
+{~s}{~s}{~s}{~s}protected static const SKIN_RES:Array = [{~n}
+{#res}		{.|s},{~n}{/res}
+{~s}{~s}{~s}{~s}];{~n}
+{/genRes}
+{~s}{~s}{~rb}{~n}
+{~rb}

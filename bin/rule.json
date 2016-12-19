@@ -1,5 +1,5 @@
 {
-  "ver":1.0,
+  "ver":1.1,
   "import": {
     "default":"laya.ui",
     "Label":"n2laya.ui",
@@ -33,6 +33,10 @@
         }
       }
     },
+    "text":{
+      "when":"Label",
+      "prop":"value"
+    },
     "sceneColor":"",
     "sceneBg":"",
     "layers":"",
@@ -54,9 +58,13 @@
   },
   "specialClass":{
     "Container": "Sprite",
+    "Text": "Label",
     "Tab": "ButtonBar"
   },
   "overrideCreateChildren":{
+    "ItemRenderer":true
+  },
+  "noCallCreateChildren":{
     "ItemRenderer":true
   }
 

@@ -1,10 +1,10 @@
 {
   "name": "ldjtool",
-  "version": "0.8.5",
+  "version": "0.8.51",
   "cfgVer":1.0,
-  "uiRuleVer":1.0,
+  "uiRuleVer":1.1,
   "scripts": {
-    "start": "node bin/ldjtool -w"
+    "start": "node bin/lu"
   },
   "dependencies": {
     "dustjs-linkedin": "^2.7.4",
@@ -15,7 +15,7 @@
     "watch": "^1.0.1"
   },
   "bin": {
-    "ldjtool": "./bin/ldjtool"
+    "lu": "./bin/lu"
   },
   "description": "**ludingji tool**",
   "main": "app.js",

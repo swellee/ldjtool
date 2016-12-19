@@ -17,7 +17,8 @@ var sh = require("child_process");
 
 var paras = process.argv;
 var file = paras.pop();
-var dirName = path.basename(path.dirname(file));
+var dir = path.dirname(file);
+var dirName = path.basename(dir);
 var actTask = 0; //活动任务数
 parseUI(file);
 
@@ -53,41 +54,20 @@ function parseUI(file) {
     }; //已经使用过的局部变量名
     var declares = {}; //记录变量声明
     var fileName = path.basename(file, ".xml");
-    var creatObjs = {
-        str: ""
-    };
+    var creates = [];
     var rootName = Object.keys(xmlData)[0]; //根容器，用于生成父类名
     var rootNode = xmlData[rootName];
     rootNode["_Attribs"].var = '';
     var lists = [];
     listNodes("this", rootName, rootNode, lists, rootName);
-    parseNode(lists, imports, res, declares, creatObjs, usedTempDefine);
+    parseNode(lists, imports, res, declares, creates, usedTempDefine);
+
     ///-----------------解析完成----------------------------------
     ///-----------------按结构导出--------------------------------
-    var clzNm = fileName + "UI";
-    var out = "//This code is auto generated and will be replaced, so don't edit it.\n" +
-        getPackName(file, ".view") +
-        getImports(imports) +
-        getClassHead(clzNm, rootName, "internal") +
-        getDeclare(declares) +
-        getConstructor(clzNm) +
-        getCreates(creatObjs, rootName) +
-        getRes(res) + "\n\t}" //class over
-        + "\n}" //pack over;
-    writeTo(path.resolve(baseUiPackDir, dirName, "view", clzNm + ".as"), out);
-    //生成对应的逻辑类
-    var logicFile = path.resolve(baseUiPackDir, dirName, "view", fileName + ".as");
-    fs.access(logicFile, fs.R_OK, (err) => {
-        if (err) {
-            var logicOut = getPackName(file, ".view") +
-                getClassHead(fileName, clzNm, "public") +
-                getConstructor(fileName, "createChildren();") +
-                "\n\t}" //class over
-                + "\n}" //pack over;
-
-            writeTo(logicFile, logicOut);
-        }
-    });
+    //生成UI类
+    genUIfile(fileName, "", rootName, imports, declares, res, creates);
+    //生成逻辑类
+    genLgFile(fileName, fileName + "UI", "", rule.noCallCreateChildren[rootName] ? "" : "createChildren");
 
     //拷贝使用了的资源到bin/h5/assets/下对应模块目录
     var cmd = "cp";
@@ -123,56 +103,20 @@ function copyres(cmd, resP, toP) {
     }
 }
 
-function getPackName(file, addition) {
+function getPackName(file) {
     var dname = path.dirname(file);
     dname = dname.split(cfg.baseUiPackRootName + path.sep)[1];
     var pks = dname.split(path.sep).join(".").toLowerCase();
-    return "package " + cfg.baseUiPackgeIdr + pks + addition + " {\n";
+    return cfg.baseUiPackgeIdr + pks;
 }
 
-function getImports(imports) {
-    var str = "";
-    for (var key in imports) {
-        str += "\timport " + key + ";\n";
-    }
-    return str;
-}
-
-function getClassHead(clazzName, root, scope) {
-    return `\t${scope} class ${clazzName} extends ${root}\n\t{\n`;
-}
 
 function getDeclare(declares) {
-    var str = "";
+    var arr = [];
     for (var key in declares) {
-        str += "\t\tprotected var " + key + ":" + declares[key] + ";\n";
+        arr.push({ dfine: key, type: declares[key] })
     }
-    return str;
-}
-
-function getConstructor(name, insert) {
-    return "\t\tpublic function " + name + "()\n" + 　"\t\t{\n\t\t\tsuper();" +
-        (insert ? ("\n\t\t\t" + insert) : "") +
-        "\n\t\t}\n";
-}
-
-function getCreates(creatObjs, baseClass) {
-    var prefix = '';
-    if (rule.overrideCreateChildren[baseClass]) {
-        prefix = "override ";
-    }
-    return "\t\t" + prefix + "protected function createChildren():void\n\t\t{\n" + creatObjs.str + "\t\t}\n";
-}
-
-function getRes(res) {
-    if (Object.keys(res).length == 0) {
-        return "\t\tprotected static const SKIN_RES:Array = [];\n";
-    }
-    var str = "\t\tprotected static const SKIN_RES:Array = [\n";
-    for (var key in res) {
-        str += '\t\t\t' + key + ',\n';
-    }
-    return str.substr(0, str.length - 2) + "\n\t\t];\n";
+    return arr;
 }
 
 function quote(str) {
@@ -207,18 +151,17 @@ function listNodes(parentName, nodeName, nodeData, list, rootName) {
         });
 
         var pName = nodeData["_Attribs"]["var"] || nodeName.toLowerCase();
-        for(var key in nodeData) {
-            if (key == "_Attribs"){
+        for (var key in nodeData) {
+            if (key == "_Attribs") {
                 continue;
             }
 
             var node = nodeData[key];
             if (node.constructor == Array) {
-                for(var i in node) {
+                for (var i in node) {
                     listNodes(pName, key, node[i], list, rootName);
                 }
-            }
-            else {
+            } else {
                 listNodes(pName, key, node, list, rootName);
             }
         }
@@ -229,7 +172,7 @@ function listNodes(parentName, nodeName, nodeData, list, rootName) {
 
 
 
-function parseNode(nodeLists, imports, res, declares, createStrObj, usedTempDefine) {
+function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
     nodeLists.sort(function(a, b) {
         if (a.nodeData["_Attribs"] && b.nodeData["_Attribs"]) {
             return a.nodeData["_Attribs"].layer - b.nodeData["_Attribs"].layer;
@@ -305,6 +248,10 @@ function parseNode(nodeLists, imports, res, declares, createStrObj, usedTempDefi
                             recProps(nameRule["prop"], attValue, props, res, true);
                         }
                     }
+                } 
+                //带过滤的特殊属性转换
+                else if (specialRule["when"] && specialRule.when.indexOf(clazz) != -1) {
+                    recProps(specialRule.prop, attValue, props, res);
                 }
                 //作为函数处理
                 else if (specialRule.indexOf("_") != -1) {
@@ -320,7 +267,7 @@ function parseNode(nodeLists, imports, res, declares, createStrObj, usedTempDefi
                     }
                     funcs[funName][paraIdx] = attValue;
                 }
-                //需要转换的setter属性
+                //统一需要转换的setter属性
                 else {
                     recProps(specialRule, attValue, props, res);
                 }
@@ -349,9 +296,10 @@ function parseNode(nodeLists, imports, res, declares, createStrObj, usedTempDefi
             if (!skipVar) {
                 usedTempDefine[dfine] = true;
             }
-            createStrObj.str += "\t\t\t" + (skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "();\n";
+
+            creates.push((skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "()");
             if (declares.hasOwnProperty(dfine)) {
-                createStrObj.str += "\t\t\t" + dfine + ".name = " + quote(dfine) + ";\n";
+                creates.push(dfine + ".name = " + quote(dfine));
             }
         }
 
@@ -363,18 +311,17 @@ function parseNode(nodeLists, imports, res, declares, createStrObj, usedTempDefi
             for (var pp = 0; pp < pcount; pp++) {
                 funcs[f][pp] = funcs[f][pp] || 0; //若无完整的参数量，则补0
             }
-            createStrObj.str += "\t\t\t" + dfine + "." + fname + "(" + funcs[f].join(",") + ");\n";
+            creates.push(dfine + "." + fname + "(" + funcs[f].join(",") + ")")
         }
         //其他属性
         for (var p in props) {
-            createStrObj.str += "\t\t\t" + 　dfine + 　"." + p + " = " + props[p] + ";\n";
+            creates.push(dfine + 　"." + p + " = " + props[p]);
         }
 
         if (parentNodeName) {
-            createStrObj.str += "\t\t\t" + parentNodeName + ".addChild(" + dfine + ");\n";
+            creates.push(parentNodeName + ".addChild(" + dfine + ")");
         }
 
-        createStrObj.str += "\n";
     }
 }
 
@@ -454,9 +401,7 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
     ///-----------------解析子类----------------------------------
     var imports = {}; //key记录导包信息
     var declares = {}; //记录变量声明
-    var creatObjs = {
-        str: ""
-    };
+    var creates = [];
     var usedTempDefine = {
         "var": true
     }; //已经使用过的局部变量名
@@ -464,36 +409,58 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
     nodeData["_Attribs"].name = rootName;
     nodeData["_Attribs"].var = '';
     listNodes("this", rootName, nodeData, lists, rootName);
-    parseNode(lists, imports, res, declares, creatObjs, usedTempDefine);
+    parseNode(lists, imports, res, declares, creates, usedTempDefine);
     ///-----------------按结构导出UI类--------------------------------
-    var clzNm = fileName + "UI";
-    var dir = path.dirname(file);
-    var filePath = path.join(dir, "view", packName, fileName);
-    var out = "//This code is auto generated and will be replaced, so don't edit it.\n" +
-        getPackName(filePath, '') +
-        getImports(imports) +
-        getClassHead(clzNm, rootName, "public") +
-        getDeclare(declares) +
-        getConstructor(clzNm) +
-        getCreates(creatObjs, rootName) +
-        "\n\t}" //class over
-        + "\n}" //pack over;
-    writeTo(path.resolve(baseUiPackDir, dirName, "view", packName, clzNm + ".as"), out);
+    genUIfile(fileName, packName, rootName, imports, declares, null, creates);
 
-    //----------------生成对应的逻辑类---------------------------------
+    //生成逻辑类
+    genLgFile(fileName, fileName + "UI", packName, rule.noCallCreateChildren[rootName] ? "" : "createChildren");
+}
+//生成UI类
+function genUIfile(fileName, packName, rootName, imports, declares, res, creates) {
+    var clzNm = fileName + "UI";
+
+    var filePath = path.join(dir, "view", packName, fileName);
+    //生成UI类
+    var clzNm = fileName + "UI";
+    var dustData = {
+        pack: getPackName(filePath),
+        imports: Object.keys(imports),
+        className: clzNm,
+        declares: getDeclare(declares),
+        rootName: rootName,
+        creates: creates,
+        createFunType: rule.overrideCreateChildren[rootName] ? "override protected" : '',
+        ui: true
+    }
+    if (res) {
+        dustData.res = Object.keys(res);
+        dustData.genRes = true;
+    }
+
+    util.dust("ui", dustData, function(out) {
+        writeTo(path.resolve(baseUiPackDir, dirName, "view", packName, clzNm + ".as"), out);
+    })
+}
+
+//生成UI逻辑类
+function genLgFile(fileName, rootName, packName, superCall) {
+    var filePath = path.join(dir, "view", packName, fileName);
     var logicFile = path.resolve(baseUiPackDir, dirName, "view", packName, fileName + ".as");
     fs.access(logicFile, fs.R_OK, (err) => {
         if (err) {
-            var logicOut = getPackName(filePath, '') +
-                getClassHead(fileName, clzNm, "public") +
-                getConstructor(fileName) +
-                "\n\t}" //class over
-                + "\n}" //pack over;
+            var lgData = {
+                pack: getPackName(filePath),
+                className: fileName,
+                rootName: rootName,
+                superCall: superCall
+            }
 
-            writeTo(logicFile, logicOut);
+            util.dust("ui", lgData, function(out) {
+                writeTo(logicFile, out);
+            })
         }
     });
-
 }
 
 function writeTo(filePath, data) {

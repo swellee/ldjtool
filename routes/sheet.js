@@ -35,11 +35,6 @@ function main(usrCfg, cmds) {
             outDir = cmds.shift();
     }
     process.chdir(inDir);
-    try {
-        require("child_process").execSync("svn up");
-    } catch (e) {
-        console.warn("fail to update xlsx by svn command, you may do this manually");
-    }
     fs.readdir(inDir, listFiles);
 }
 

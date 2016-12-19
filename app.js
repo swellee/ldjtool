@@ -20,6 +20,7 @@ var uiwatching = false;
 var options = {
     "-h": showHelp,
     "-c": modConfig,
+    "-d": depackFl,
     "-a": createPrjAP,
     "-u": parseUI,
     "-ux": addUIClazz,
@@ -40,13 +41,23 @@ function main(argv) {
     routes.ui = path.resolve(__dirname, "./routes/ui.js"); //use as fork
     routes.util = require("./routes/util");
     routes.sheet = require("./routes/sheet");
+    routes.depack = require("./routes/depack");
     //是否需要强制升级配置
     routes.util.mkdirs(userCfgDir, function() {
         try {
             fs.accessSync(userUIRulePath, fs.R_OK);
             var localUiRule = require(userUIRulePath);
             if (localUiRule.ver != packInfo.uiRuleVer) {
-                fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
+                //保留local ui rule里的自定义类及包路径
+                var newUIRule = require(path.resolve(__dirname, "./bin/rule.json"));
+                for(var key in localUiRule.import) {
+                    if (!newUIRule.import[key]) {
+                        newUIRule.import[key] = localUiRule.import[key];
+                    }
+                }
+
+                //替换
+                fs.writeFileSync(userUIRulePath, JSON.stringify(newUIRule),{flag: "w"});
             }
         } catch (e) {
             //copy ui rule file
@@ -99,17 +110,18 @@ function routeCmd(cmd) {
 function showHelp() {
     console.log("当前版本：" + packInfo.version + "\n" +
         "使用说明：\n\
-    ldjtool -h : 显示该使用说明;\n\
-    ldjtool -c : 重新配置工具参数;\n\
-    ldjtool -a [laya_engine_src_path]: 在当前目录生成项目使用的.actionScriptProperties; -a后跟的参数为laya引擎的src代码路径，如果未给，则启用输入模式录入\n\
-    ldjtool -m : 在项目目录下使用此命令，可更改项目的一些配置（如版本号等）\n\
-    ldjtool -x [xlsx_in_path][xlsx_out_path]: 将配表转换成程序使用的文件，可选参数xlsx_in_path表示要处理的配表文件夹路径（不传则使用ldjtool -c配置的配表目录），\n\
-    可选参数xlsx_out_path表示生成的tpl.json的存放目录（不传则使用ldjtool -c配置的放置目录）；\n\n\
-    ldjtool -u [path or file] : 将指定目录下或指定的某个的mornUI生成的xml文件转换成as代码文件,不传路径则使用配置的baseUiFileDir路径；\n\n\
-    ldjtool -ux : 添加UI解析时的 类名-包名 规则，以适应生成代码时对自定义类映射的支持；\n\n\
-    ldjtool -uw : 监控UI文件目录的改动，自动重新生成UI代码；\n\n\
-    ldjtool -b [projectDir] :编译项目；projectDir为项目路径，不传则使用当前路径（如果当前路径不是客户端目录，则会出错）\n\
-    ldjtool -p [projectDir] [ver]:发布项目，projectDir为项目路径，不传则使用当前路径, 参数ver为版本号，不传则使用老的版本号，如果只传一个参数，则此参数当作版本号处理");
+    lu -h : 显示该使用说明;\n\
+    lu -c : 重新配置工具参数;\n\
+    lu -d [path_to_class_file]: 对目标类文件进行分包处理;\n\
+    lu -a [laya_engine_src_path]: 在当前目录生成项目使用的.actionScriptProperties; -a后跟的参数为laya引擎的src代码路径，如果未给，则启用输入模式录入\n\
+    lu -m : 在项目目录下使用此命令，可更改项目的一些配置（如版本号等）\n\
+    lu -x [xlsx_in_path][xlsx_out_path]: 将配表转换成程序使用的文件，可选参数xlsx_in_path表示要处理的配表文件夹路径（不传则使用lu -c配置的配表目录），\n\
+    可选参数xlsx_out_path表示生成的tpl.json的存放目录（不传则使用lu -c配置的放置目录）；\n\n\
+    lu -u [path or file] : 将指定目录下或指定的某个的mornUI生成的xml文件转换成as代码文件,不传路径则使用配置的baseUiFileDir路径；\n\n\
+    lu -ux : 添加UI解析时的 类名-包名 规则，以适应生成代码时对自定义类映射的支持；\n\n\
+    lu -uw : 监控UI文件目录的改动，自动重新生成UI代码；\n\n\
+    lu -b [projectDir] :编译项目；projectDir为项目路径，不传则使用当前路径（如果当前路径不是客户端目录，则会出错）\n\
+    lu -p [projectDir] [ver]:发布项目，projectDir为项目路径，不传则使用当前路径, 参数ver为版本号，不传则使用老的版本号，如果只传一个参数，则此参数当作版本号处理");
 }
 
 //只会遍历baseUIFileDir之下的一级目录！！！！！
@@ -134,7 +146,6 @@ function parseUI() {
 }
 
 function addUIClazz() {
-    // body...
     console.log("添加自定义类到UI解析规则:")
     var schema = {
         properties: {
@@ -265,7 +276,7 @@ function buildApp(cb, ignoreSdk) {
     var platform = os.platform();
     if (platform != "win32") {
         if (cfg.layaCmd.indexOf("wine") != -1) {
-            wineVpath = "z:"; //linux & mac use wine，针对laya1.3版本，需要在 exe程序 的参数路径上加上z:虚拟盘符以指向linux 的 root路径，后续如果升级laya.js.exe再观察
+            wineVpath = "z:"; //linux use wine，针对laya1.3版本，需要在 exe程序 的参数路径上加上z:虚拟盘符以指向linux 的 root路径，后续如果升级laya.js.exe再观察
         }
         cfg.layaPara += ";windowshow=false" //非windows，不显示gui
     }
@@ -307,7 +318,7 @@ function buildApp(cb, ignoreSdk) {
 }
 
 function publishApp() {
-    var ver = ''; //如果 ldjtool -p 后跟参数，则最后一个参数作为版本号处理
+    var ver = ''; //如果 lu -p 后跟参数，则最后一个参数作为版本号处理
     if (cmds.length) {
         ver = cmds.pop();
     }
@@ -398,6 +409,14 @@ function modConfig() {
     })
 }
 
+function depackFl() {
+    if (!cmds.length) {
+        util.err("参数中必需有要分包的类文件的路径");
+        return;
+    }
+    routes.depack(cmds.pop());
+}
+
 function createPrjAP() {
     var engineSrc = "path/to/laya/engine/src";
     if (cmds.length) {
@@ -458,7 +477,7 @@ function doModPrjCfg() {
     try {
         fs.accessSync(cpath, fs.R_OK);
     } catch (err) {
-        var pcfg = { version: "0.0.1" };
+        var pcfg = { version: "test" };
         fs.appendFileSync(cpath, JSON.stringify(pcfg))
     }
 

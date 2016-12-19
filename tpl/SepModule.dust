@@ -1,0 +1,15 @@
+package app.modules {
+	public class SepModule{
+		//generate------------don't edit this section manually------------
+		//declares-start
+		{#declares}public static const {name}:String = {name};{@sep}\n{/sep}{/declares}
+		//declares-end
+		//用来记录已分包的类名-包路径映射
+		private static var packInfo = {};
+
+		public static function init():void {
+			{#packs}packInfo[{name}] = '{pack}';{@sep}\n{/sep}{/packs}
+		}
+		//generate end--------can edit code after this line---------------
+	}
+}
