@@ -15,7 +15,7 @@ public class {className|s} extends {rootName|s} {~lb}{~n}
 {! createChildren !}
 {?ui}
 {?createFunType}	{createFunType}{:else}	protected{/createFunType} function createChildren():void{~lb}{~n}
-{#creates}		{.|s};{~n}{/creates}
+{#creates}		{.|s}{~n}{/creates}
 {~s}{~s}{~s}{~s}{~rb}{~n}
 {/ui}
 

@@ -59,7 +59,7 @@ function parseUI(file) {
     var rootNode = xmlData[rootName];
     rootNode["_Attribs"].var = '';
     var lists = [];
-    listNodes("this", rootName, rootNode, lists, rootName);
+    listNodes("this", rootName, rootNode, lists, rootName, declares, usedTempDefine);
     parseNode(lists, imports, res, declares, creates, usedTempDefine);
 
     ///-----------------解析完成----------------------------------
@@ -123,34 +123,33 @@ function quote(str) {
     return "'" + str + "'";
 }
 
-function listNodes(parentName, nodeName, nodeData, list, rootName) {
-    //作为子类导出？   
+function listNodes(parentName, nodeName, nodeData, list, rootName, declares, usedTempDefine) {
+       
     parentName = parentName == rootName.toLowerCase() ? "this" : parentName;
-    if (nodeData["_Attribs"] && nodeData["_Attribs"]["name"]) {
-        //需要作为子类导出的节点数据
-        var nm = nodeData["_Attribs"]["name"];
-        if (rule.specialAttr.name[nodeName]) {
-            var nameRule = rule.specialAttr.name;
-            if (nameRule[nodeName] && nameRule[nodeName]["type"] && nameRule[nodeName]["type"] == "childClass") {
-                list.push({
-                    parentName: parentName,
-                    nodeName: nodeName,
-                    nodeData: nodeData
-                });
-                return;
-            }
-        }
-
-    }
-
+   
     if (nodeData["_Attribs"]) {
+        var attrs = nodeData["_Attribs"];
+        var rec = recDefine(nodeName, attrs, declares, usedTempDefine);
+        //本节点数据
         list.push({
             parentName: parentName,
             nodeName: nodeName,
-            nodeData: nodeData
+            nodeData: nodeData,
+            define: rec.define,
+            clazz: rec.clazz
         });
 
-        var pName = nodeData["_Attribs"]["var"] || nodeName.toLowerCase();
+        if (nodeData["_Attribs"]["name"]) {
+            //需要作为子类导出的节点数据
+            if (rule.specialAttr.name[nodeName]) {
+                var nameRule = rule.specialAttr.name;
+                if (nameRule[nodeName] && nameRule[nodeName]["type"] && nameRule[nodeName]["type"] == "childClass") {
+                    return;
+                }
+            }
+        }
+
+        //其他同级数组节点或子节点，递归
         for (var key in nodeData) {
             if (key == "_Attribs") {
                 continue;
@@ -159,10 +158,10 @@ function listNodes(parentName, nodeName, nodeData, list, rootName) {
             var node = nodeData[key];
             if (node.constructor == Array) {
                 for (var i in node) {
-                    listNodes(pName, key, node[i], list, rootName);
+                    listNodes(rec.define, key, node[i], list, rootName, declares, usedTempDefine);
                 }
             } else {
-                listNodes(pName, key, node, list, rootName);
+                listNodes(rec.define, key, node, list, rootName, declares, usedTempDefine);
             }
         }
 
@@ -189,14 +188,12 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
         if (clazz && rule.specialClass[nodeName]) {
             clazz = rule.specialClass[nodeName]; //特殊的类映射
         }
-        var dfine = nodeName.toLowerCase();
         var funcs = {};
         var props = {};
         //处理当前节点的属性
         var attrs = nodeData["_Attribs"];
-        var rec = recDefine(dfine, nodeName, attrs, declares, i != 0);
-        dfine = rec.define;
-        clazz = rec.clazz;
+        var dfine = node.define;
+        var clazz = node.clazz;
         for (var attKey in attrs) {
             var attValue = attrs[attKey];
             //需要特殊处理的属性
@@ -248,7 +245,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
                             recProps(nameRule["prop"], attValue, props, res, true);
                         }
                     }
-                } 
+                }
                 //带过滤的特殊属性转换
                 else if (specialRule["when"] && specialRule.when.indexOf(clazz) != -1) {
                     recProps(specialRule.prop, attValue, props, res);
@@ -290,16 +287,13 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
             }
             //self class
             var skipVar = false;
-            if (usedTempDefine.hasOwnProperty(dfine) || declares.hasOwnProperty(dfine)) {
-                skipVar = true;
-            }
-            if (!skipVar) {
-                usedTempDefine[dfine] = true;
-            }
-
-            creates.push((skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "()");
             if (declares.hasOwnProperty(dfine)) {
-                creates.push(dfine + ".name = " + quote(dfine));
+                skipVar = true;
+            } 
+
+            creates.push((skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "();");
+            if (declares.hasOwnProperty(dfine)) {
+                creates.push(dfine + ".name = " + quote(dfine) + ";");
             }
         }
 
@@ -311,46 +305,64 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
             for (var pp = 0; pp < pcount; pp++) {
                 funcs[f][pp] = funcs[f][pp] || 0; //若无完整的参数量，则补0
             }
-            creates.push(dfine + "." + fname + "(" + funcs[f].join(",") + ")")
+            creates.push(dfine + "." + fname + "(" + funcs[f].join(",") + ");")
         }
         //其他属性
         for (var p in props) {
-            creates.push(dfine + 　"." + p + " = " + props[p]);
+            creates.push(dfine + 　"." + p + " = " + props[p] + ";");
         }
 
         if (parentNodeName) {
-            creates.push(parentNodeName + ".addChild(" + dfine + ")");
+            creates.push(parentNodeName + ".addChild(" + dfine + ");");
         }
-
+        creates.push("\n");
     }
 }
 
-function recDefine(define, nodeName, attrs, declares, needRec) {
-    var rec = {
-        define: define,
-        clazz: nodeName
-    }
+
+function recDefine(nodeName, attrs, declares, usedTempDefine) {
+    var define = attrs["var"] || nodeName.toLowerCase();
+
+    var clazz = nodeName;
+    var needRec = true;
     if (attrs["name"] && !rule.specialAttr.name[nodeName]) {
         if (attrs["var"]) {
-            rec.define = attrs["var"];
+            define = attrs["var"];
         } else {
             needRec = false;
-            rec.define = attrs["name"].toLowerCase();
+            define = attrs["name"].toLowerCase();
         }
-        rec.clazz = attrs["name"];
+        clazz = attrs["name"];
     } else if (attrs["var"]) {
-        rec.define = attrs["var"];
+        define = attrs["var"];
     } else {
         needRec = false;
     }
 
-    if (rule.specialClass[rec.clazz]) {
-        rec.clazz = rule.specialClass[rec.clazz];
+    if (rule.specialClass[clazz]) {
+        clazz = rule.specialClass[clazz];
     }
-    if (needRec) {
-        declares[rec.define] = rec.clazz;
+    if (needRec) { //已命名的成员变量
+        declares[define] = clazz;
+    } else { //临时变量
+        if (usedTempDefine.hasOwnProperty(define)) {
+            var tempDf = define + "1";
+            var renameDf = tempDf.replace(/[0-9]$/, function(tidx) {
+                var tid = parseInt(tidx);
+
+                while (usedTempDefine.hasOwnProperty(tempDf)) {
+                    tid++;
+                    tempDf = define + tid;
+                }
+                return tid;
+            });
+            define = renameDf;
+        }
+        usedTempDefine[define] = true;
+
     }
-    return rec;
+
+    return { define: define, clazz: clazz };
 }
 
 function recProps(attKey, attValue, props, res, force) {
@@ -408,7 +420,7 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
     var lists = [];
     nodeData["_Attribs"].name = rootName;
     nodeData["_Attribs"].var = '';
-    listNodes("this", rootName, nodeData, lists, rootName);
+    listNodes("this", rootName, nodeData, lists, rootName, declares, usedTempDefine);
     parseNode(lists, imports, res, declares, creates, usedTempDefine);
     ///-----------------按结构导出UI类--------------------------------
     genUIfile(fileName, packName, rootName, imports, declares, null, creates);
