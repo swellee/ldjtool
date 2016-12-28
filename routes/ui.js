@@ -407,6 +407,9 @@ function recProps(attKey, attValue, props, res, force) {
                 attValue = quote("assets/img/" + attFix.join("/") + "." + tail);
                 res[attValue] = true;
             }
+            else {
+                attValue = quote(tail);
+            }
         } else {
             attValue = quote(attValue); //包一层引号
         }
