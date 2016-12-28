@@ -10,7 +10,7 @@ var sh = require("child_process");
 var fork = sh.fork;
 var userCfgDir = path.join(os.homedir(), ".ldjtool");
 var userCfgPath = path.join(userCfgDir, "cfg.json");
-var userUIRulePath = path.join(userCfgDir, "ui_rule.json");
+var userUIRulePath;
 var toolCfg = require("./bin/config");
 var ruleCfg = require("./bin/rule.json");
 var cfg = toolCfg;
@@ -44,7 +44,33 @@ function main(argv) {
     routes.depack = require("./routes/depack");
     //是否需要强制升级配置
     routes.util.mkdirs(userCfgDir, function() {
+        var uCfg;//用户参数
         try {
+            fs.accessSync(userCfgPath, fs.R_OK);
+             uCfg = require(userCfgPath);
+            var match = true;
+            for (var key in cfg) {
+                if (!uCfg.hasOwnProperty(key)) {
+                    match = false;
+                    uCfg[key] = cfg[key]; //没有的key，先添加上
+                } else {
+                    cfg[key] = uCfg[key];
+                }
+            }
+
+
+            if (!match || uCfg.ver != packInfo.cfgVer)
+                throw new Error("配置格式升级");
+        } catch (e) {
+            console.log('需要重新配置工具参数。。。');
+            modConfig();
+            return;
+        }
+
+        //ui规则文件
+        try {
+            userUIRulePath = path.join(uCfg.clientDir, ".ui_rule.json");
+
             fs.accessSync(userUIRulePath, fs.R_OK);
             var localUiRule = require(userUIRulePath);
             if (localUiRule.ver != packInfo.uiRuleVer) {
@@ -64,27 +90,6 @@ function main(argv) {
             fs.writeFileSync(userUIRulePath, fs.readFileSync(path.resolve(__dirname, "./bin/rule.json")));
         }
 
-        try {
-            fs.accessSync(userCfgPath, fs.R_OK);
-            var uCfg = require(userCfgPath);
-            var match = true;
-            for (var key in cfg) {
-                if (!uCfg.hasOwnProperty(key)) {
-                    match = false;
-                    uCfg[key] = cfg[key]; //没有的key，先添加上
-                } else {
-                    cfg[key] = uCfg[key];
-                }
-            }
-
-
-            if (!match || uCfg.ver != packInfo.cfgVer)
-                throw new Error("配置格式升级");
-        } catch (e) {
-            console.log('需要重新配置工具参数。。。');
-            modConfig();
-            return;
-        }
 
 
         cmds = argv;
@@ -161,13 +166,16 @@ function addUIClazz() {
     prompt.start();
     prompt.get(schema, function(err, result) {
         var rule = require(userUIRulePath);
+        result.class = result.class.replace(/[\s\r\n]+/g ,"");
+        result.package = result.package.replace(/[\s\r\n]+/g ,"");
+
         if (rule.import.hasOwnProperty(result.class)) {
             console.log(`发现已有类名${result.class},其映射的包名为${rule.import[result.class]},是否覆盖？（y/n）`);
             process.stdin.pause();
             process.stdin.resume();
             process.stdin.on("data", (input) => {
                 if (input) {
-                    input = input.toString().replace(/[\r\n]/, "");
+                    input = input.toString().replace(/[\s\r\n]+/g, "");
                 }
                 if (input == "y" || input == "Y") {
                     rule.import[result.class] = result.package;
@@ -395,7 +403,7 @@ function modConfig() {
     prompt.start();
     prompt.get(schema, function(err, result) {
         for (var mk in result) {
-            cfg[mk] = result[mk];
+            cfg[mk] = pathSep(result[mk]);
         }
         var cpath = pathSep(path.resolve(__dirname, "./bin/config.json"));
         //写入config.json

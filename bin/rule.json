@@ -1,11 +1,11 @@
 {
-  "ver":1.1,
+  "ver": 1.1,
   "import": {
-    "default":"laya.ui",
-    "Label":"n2laya.ui",
-    "List":"n2laya.ui",
-    "Input":"laya.display",
-    "Sprite":"n2laya.ui",
+    "default": "laya.ui",
+    "Label": "n2laya.ui",
+    "List": "n2laya.ui",
+    "Input": "laya.display",
+    "Sprite": "n2laya.ui",
     "View": "app.core",
     "ItemRenderer": "app.core",
     "Rect": "app.ui",
@@ -16,56 +16,61 @@
     "CheckButton": "app.ui",
     "HeroCard": "app.ui",
     "StarRate": "app.ui",
-    "StarRate2": "app.ui"
+    "StarRate2": "app.ui",
+    "HeroItem": "app.modules.widget",
+    "BasicItem": "app.modules.widget",
+    "HtmlLabel": "n2laya.ui",
+    "CurrentServerItem": "app.modules.login.view",
+    "EffectU": "n2laya.ui",
+    "RecentSrvitem": "app.modules.login.view"
   },
   "specialAttr": {
-    "name":{
-      "default":"class",
-      "Button":{
-        "type":"prop",
-        "prop":"stateNum"
+    "name": {
+      "default": "class",
+      "Button": {
+        "type": "prop",
+        "prop": "stateNum"
       },
-      "List":{
-        "type":"childClass",
-        "prop":"itemRender",
-        "addProp":{
-          "vScrollBarSkin":"''"
+      "List": {
+        "type": "childClass",
+        "prop": "itemRender",
+        "addProp": {
+          "vScrollBarSkin": "''"
         }
       }
     },
-    "text":{
-      "when":"Label",
-      "prop":"value"
+    "text": {
+      "when": "Label",
+      "prop": "value"
     },
-    "sceneColor":"",
-    "sceneBg":"",
-    "layers":"",
-    "layer":"",
-    "multiline":"",
-    "centerX":"",
-    "centerY":"",
-    "stateNum":"",
-    "styleSkin":"",
-    "var":"var",
-    "width":"size_2_0",
-    "height":"size_2_1",
-    "x":"pos_2_0",
-    "y":"pos_2_1",
-    "size":"fontSize",
-    "ItemRenderer":"itemRender",
-    "labelSize":"labelDisplay.fontSize",
-    "labelColors":"labelDisplay.color"
+    "sceneColor": "",
+    "sceneBg": "",
+    "layers": "",
+    "layer": "",
+    "multiline": "",
+    "centerX": "",
+    "centerY": "",
+    "stateNum": "",
+    "styleSkin": "",
+    "var": "var",
+    "width": "size_2_0",
+    "height": "size_2_1",
+    "x": "pos_2_0",
+    "y": "pos_2_1",
+    "size": "fontSize",
+    "ItemRenderer": "itemRender",
+    "labelSize": "labelDisplay.fontSize",
+    "labelColors": "labelDisplay.color"
   },
-  "specialClass":{
+  "specialClass": {
     "Container": "Sprite",
     "Text": "Label",
     "Tab": "ButtonBar"
   },
-  "overrideCreateChildren":{
-    "ItemRenderer":true
+  "overrideCreateChildren": {
+    "ItemRenderer": true
   },
-  "noCallCreateChildren":{
-    "ItemRenderer":true
+  "noCallCreateChildren": {
+    "ItemRenderer": true
   }
-
 }

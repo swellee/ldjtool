@@ -7,10 +7,11 @@ var path = require("path");
 var fs = require("fs");
 var util = require("./util");
 var os = require("os");
-
+var validResTyes = "jpg,png";
 var userCfgDir = path.join(os.homedir(), ".ldjtool");
 var cfg = require(path.join(userCfgDir, "cfg.json"));
-var rule = require(path.join(userCfgDir, "ui_rule.json"));
+// var rule = require(path.join(userCfgDir, "ui_rule.json"));
+var rule = require(path.join(cfg.clientDir, ".ui_rule.json"));
 
 var baseUiPackDir = path.resolve(cfg.clientDir, "src/app/modules");
 var sh = require("child_process");
@@ -77,6 +78,10 @@ function parseUI(file) {
         }
     });
     for (var key in res) {
+        if (key.indexOf("/comp/") != -1) {
+            //跳过默认组件资源
+            continue;
+        }
         var rP = key.replace(/("|')/g, '');
         var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
         var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
@@ -124,9 +129,9 @@ function quote(str) {
 }
 
 function listNodes(parentName, nodeName, nodeData, list, rootName, declares, usedTempDefine) {
-       
+
     parentName = parentName == rootName.toLowerCase() ? "this" : parentName;
-   
+
     if (nodeData["_Attribs"]) {
         var attrs = nodeData["_Attribs"];
         var rec = recDefine(nodeName, attrs, declares, usedTempDefine);
@@ -247,26 +252,30 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
                     }
                 }
                 //带过滤的特殊属性转换
-                else if (specialRule["when"] && specialRule.when.indexOf(clazz) != -1) {
-                    recProps(specialRule.prop, attValue, props, res);
-                }
-                //作为函数处理
-                else if (specialRule.indexOf("_") != -1) {
+                else if (specialRule.hasOwnProperty("when")) {
+                    if (specialRule.when.indexOf(clazz) != -1) {
+                        recProps(specialRule.prop, attValue, props, res);
+                    } else {
+                        recProps(attKey, attValue, props, res);
+                    }
+                } else {
                     var sp = specialRule.lastIndexOf("_");
-                    var funName = specialRule.substring(0, sp);
-                    var paraIdx = specialRule.substr(sp + 1);
-                    if (!funcs[funName]) {
-                        funcs[funName] = [];
+                    if (sp != -1) {
+                        var funName = specialRule.substring(0, sp);
+                        var paraIdx = specialRule.substr(sp + 1);
+                        if (!funcs[funName]) {
+                            funcs[funName] = [];
+                        }
+                        var num = parseInt(attValue);
+                        if (!isNaN(num)) { //能作为数字的，转为数字
+                            attValue = num;
+                        }
+                        funcs[funName][paraIdx] = attValue;
+
+                    } else {
+
+                        recProps(specialRule, attValue, props, res);
                     }
-                    var num = parseInt(attValue);
-                    if (!isNaN(num)) { //能作为数字的，转为数字
-                        attValue = num;
-                    }
-                    funcs[funName][paraIdx] = attValue;
-                }
-                //统一需要转换的setter属性
-                else {
-                    recProps(specialRule, attValue, props, res);
                 }
 
             }
@@ -289,7 +298,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
             var skipVar = false;
             if (declares.hasOwnProperty(dfine)) {
                 skipVar = true;
-            } 
+            }
 
             creates.push((skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "();");
             if (declares.hasOwnProperty(dfine)) {
@@ -394,8 +403,10 @@ function recProps(attKey, attValue, props, res, force) {
             //标记资源
             var attFix = attValue.split(".");
             var tail = attFix.shift();
-            attValue = quote("assets/img/" + attFix.join("/") + "." + tail);
-            res[attValue] = true;
+            if (validResTyes.indexOf(tail) != -1) {
+                attValue = quote("assets/img/" + attFix.join("/") + "." + tail);
+                res[attValue] = true;
+            }
         } else {
             attValue = quote(attValue); //包一层引号
         }
