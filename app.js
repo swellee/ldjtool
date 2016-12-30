@@ -44,10 +44,10 @@ function main(argv) {
     routes.depack = require("./routes/depack");
     //是否需要强制升级配置
     routes.util.mkdirs(userCfgDir, function() {
-        var uCfg;//用户参数
+        var uCfg; //用户参数
         try {
             fs.accessSync(userCfgPath, fs.R_OK);
-             uCfg = require(userCfgPath);
+            uCfg = require(userCfgPath);
             var match = true;
             for (var key in cfg) {
                 if (!uCfg.hasOwnProperty(key)) {
@@ -76,14 +76,14 @@ function main(argv) {
             if (localUiRule.ver != packInfo.uiRuleVer) {
                 //保留local ui rule里的自定义类及包路径
                 var newUIRule = require(path.resolve(__dirname, "./bin/rule.json"));
-                for(var key in localUiRule.import) {
+                for (var key in localUiRule.import) {
                     if (!newUIRule.import[key]) {
                         newUIRule.import[key] = localUiRule.import[key];
                     }
                 }
 
                 //替换
-                fs.writeFileSync(userUIRulePath, JSON.stringify(newUIRule),{flag: "w"});
+                fs.writeFileSync(userUIRulePath, JSON.stringify(newUIRule), { flag: "w" });
             }
         } catch (e) {
             //copy ui rule file
@@ -166,8 +166,8 @@ function addUIClazz() {
     prompt.start();
     prompt.get(schema, function(err, result) {
         var rule = require(userUIRulePath);
-        result.class = result.class.replace(/[\s\r\n]+/g ,"");
-        result.package = result.package.replace(/[\s\r\n]+/g ,"");
+        result.class = result.class.replace(/[\s\r\n]+/g, "");
+        result.package = result.package.replace(/[\s\r\n]+/g, "");
 
         if (rule.import.hasOwnProperty(result.class)) {
             console.log(`发现已有类名${result.class},其映射的包名为${rule.import[result.class]},是否覆盖？（y/n）`);
@@ -315,7 +315,7 @@ function buildApp(cb, ignoreSdk) {
             })
 
             if (!ignoreSdk) {
-                routes.util.dust("index", { ver: "0.0.1", debug: true }, function(out) {
+                routes.util.dust("index", { ver: "0.0.1", debug: true, branch: getCurBranchName() }, function(out) {
                     var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
                     fs.writeFileSync(htmlfile, out);
                 })
@@ -375,12 +375,24 @@ function publishApp() {
         }
 
         console.log("将版本号更新到index.html");
-        routes.util.dust("index", { ver: ver, debug: false }, function(out) {
+        routes.util.dust("index", { ver: ver, debug: false, branch: getCurBranchName() }, function(out) {
             var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
             fs.writeFileSync(htmlfile, out);
+
+            console.log("创建资源目录带版本号的软链接");
+            sh.execSync("cd bin/h5; rm res*; ln -s assets res" + ver);
         })
     }, true);
 
+}
+
+function getCurBranchName() {
+    try {
+        var brs = sh.execSync("git branch");
+        return brs.toString().match(/\*\s\w+/)[0].replace(/\*\s+/, "");
+    } catch (e) {
+        return "";
+    }
 }
 
 function modConfig() {
