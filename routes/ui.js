@@ -61,12 +61,13 @@ function parseUI(file) {
     rootNode["_Attribs"].var = '';
     var lists = [];
     listNodes("this", rootName, rootNode, lists, rootName, declares, usedTempDefine);
-    parseNode(lists, imports, res, declares, creates, usedTempDefine);
+    var gdEles = rootName == "View" ? [] : null;
+    parseNode(lists, imports, res, declares, creates, usedTempDefine, gdEles);
 
     ///-----------------解析完成----------------------------------
     ///-----------------按结构导出--------------------------------
     //生成UI类
-    genUIfile(fileName, "", rootName, imports, declares, res, creates);
+    genUIfile(fileName, "", rootName, imports, declares, res, creates, gdEles);
     //生成逻辑类
     genLgFile(fileName, fileName + "UI", "", rule.noCallCreateChildren[rootName] ? "" : "createChildren");
 
@@ -176,7 +177,7 @@ function listNodes(parentName, nodeName, nodeData, list, rootName, declares, use
 
 
 
-function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
+function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine,gdEles) {
     nodeLists.sort(function(a, b) {
         if (a.nodeData["_Attribs"] && b.nodeData["_Attribs"]) {
             return a.nodeData["_Attribs"].layer - b.nodeData["_Attribs"].layer;
@@ -303,6 +304,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine) {
             creates.push((skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "();");
             if (declares.hasOwnProperty(dfine)) {
                 creates.push(dfine + ".name = " + quote(dfine) + ";");
+                gdEles && gdEles.push(dfine );
             }
         }
 
@@ -435,15 +437,16 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
     nodeData["_Attribs"].name = rootName;
     nodeData["_Attribs"].var = '';
     listNodes("this", rootName, nodeData, lists, rootName, declares, usedTempDefine);
-    parseNode(lists, imports, res, declares, creates, usedTempDefine);
+    var gdEles = rootName == "View" ? [] : null;
+    parseNode(lists, imports, res, declares, creates, usedTempDefine, gdEles);
     ///-----------------按结构导出UI类--------------------------------
-    genUIfile(fileName, packName, rootName, imports, declares, null, creates);
+    genUIfile(fileName, packName, rootName, imports, declares, null, creates, gdEles);
 
     //生成逻辑类
     genLgFile(fileName, fileName + "UI", packName, rule.noCallCreateChildren[rootName] ? "" : "createChildren");
 }
 //生成UI类
-function genUIfile(fileName, packName, rootName, imports, declares, res, creates) {
+function genUIfile(fileName, packName, rootName, imports, declares, res, creates,gdEles) {
     var clzNm = fileName + "UI";
 
     var filePath = path.join(dir, "view", packName, fileName);
@@ -453,9 +456,11 @@ function genUIfile(fileName, packName, rootName, imports, declares, res, creates
         pack: getPackName(filePath),
         imports: Object.keys(imports),
         className: clzNm,
+        viewName:fileName,
         declares: getDeclare(declares),
         rootName: rootName,
         creates: creates,
+        gdEles:gdEles,
         createFunType: rule.overrideCreateChildren[rootName] ? "override protected" : '',
         ui: true
     }

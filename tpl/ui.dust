@@ -10,12 +10,14 @@ public class {className|s} extends {rootName|s} {~lb}{~n}
 {~s}{~s}{~s}{~s}public function {className|s}(){~lb}{~n}
 {~s}{~s}{~s}{~s}{~s}{~s}{~s}{~s}super();{~n}
 {?superCall}		{superCall|s}();{~n}{/superCall}
+{?gdEles}		this.viewName = '{viewName|s}';{~n}{/gdEles}
 {~s}{~s}{~s}{~s}{~rb}{~n}
 {~n}
 {! createChildren !}
 {?ui}
 {?createFunType}	{createFunType}{:else}	protected{/createFunType} function createChildren():void{~lb}{~n}
 {#creates}		{.|s}{~n}{/creates}
+{#gdEles}		gdRedEles.push({.|s});{~n}{/gdEles}
 {~s}{~s}{~s}{~s}{~rb}{~n}
 {/ui}
 
