@@ -10,7 +10,6 @@ var os = require("os");
 var validResTyes = "jpg,png";
 var userCfgDir = path.join(os.homedir(), ".ldjtool");
 var cfg = require(path.join(userCfgDir, "cfg.json"));
-// var rule = require(path.join(userCfgDir, "ui_rule.json"));
 var rule = require(path.join(cfg.clientDir, ".ui_rule.json"));
 
 var baseUiPackDir = path.resolve(cfg.clientDir, "src/app/modules");
@@ -149,7 +148,7 @@ function listNodes(parentName, nodeName, nodeData, list, rootName, declares, use
             //需要作为子类导出的节点数据
             if (rule.specialAttr.name[nodeName]) {
                 var nameRule = rule.specialAttr.name;
-                if (nameRule[nodeName] && nameRule[nodeName]["type"] && nameRule[nodeName]["type"] == "childClass") {
+                if (nameRule[nodeName] && nameRule[nodeName]["type"] && (nameRule[nodeName]["type"] == "childClass" || nameRule[nodeName]["type"] == "internalClass")) {
                     return;
                 }
             }
@@ -177,7 +176,7 @@ function listNodes(parentName, nodeName, nodeData, list, rootName, declares, use
 
 
 
-function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine,gdEles) {
+function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, gdEles) {
     nodeLists.sort(function(a, b) {
         if (a.nodeData["_Attribs"] && b.nodeData["_Attribs"]) {
             return a.nodeData["_Attribs"].layer - b.nodeData["_Attribs"].layer;
@@ -213,12 +212,12 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine,gd
                     continue; //变量名已经在前面处理过了
                 }
 
-                //映射为类
+                //通过name，特殊处理
                 if (attKey == "name") {
                     if (specialRule[nodeName]) {
                         var nameRule = specialRule[nodeName];
                         //将子对象映射为类
-                        if (nameRule["type"] && nameRule.type == "childClass") {
+                        if (nameRule["type"] == "childClass") {
                             //兼容老的规则，老规则默认只生成ItemRenderer子类
                             var names = attValue.trim().split(":"); //eg. pack.className:baseClassName:false
                             var pkfile = names[0].split(".");
@@ -227,6 +226,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine,gd
                             var rootName = names.length > 1 ? names[1] : "ItemRenderer";
                             var needOverridePrefix = names.length > 2 ? (names[2] == "true") : true; //是否需要对createChildren添加oveerride前缀，默认true
                             if (nameRule["prop"]) {
+                                //将子类映射成该变量的一个属性
                                 specialRule = nameRule.prop;
                                 props[specialRule] = fileName;
                                 //将子类包引入
@@ -237,6 +237,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine,gd
                                 imports[ipt] = true;
                                 rule.overrideCreateChildren[rootName] = needOverridePrefix;
                             }
+                            //额外添加的属性
                             if (nameRule["addProp"]) {
                                 var adds = nameRule["addProp"];
                                 for (var ad in adds) {
@@ -244,7 +245,17 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine,gd
                                 }
                             }
                             //生成子类代码
-                            parseChildUI(packName, fileName, rootName, nodeData, res);
+                            parseChildUI(packName, fileName, rootName, nodeData, res, true);
+                        }
+                        //直接映射成一个新类
+                        else if (nameRule["type"] == "internalClass") {
+                            //记录类型
+                            // recProps(specialRule, attValue, props, res);
+                            //生成映射类
+                            var nms = attValue.trim().split(":");
+                            var flNm = nms[0];
+                            var bsNm = nms.length > 1 ? nms[1] : "Sprite";
+                            parseChildUI("", flNm, bsNm, nodeData, res, false);
                         }
                         //将name作为属性处理
                         else if (nameRule["type"] == "prop") {
@@ -304,29 +315,32 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine,gd
             creates.push((skipVar ? dfine : "var " + dfine + ":" + clazz) + " = new " + clazz + "();");
             if (declares.hasOwnProperty(dfine)) {
                 creates.push(dfine + ".name = " + quote(dfine) + ";");
-                gdEles && gdEles.push(dfine );
+                gdEles && gdEles.push(dfine);
             }
         }
 
-        //调用函数
-        for (var f in funcs) {
-            var fn = f.split("_");
-            var fname = fn[0];
-            var pcount = fn[1];
-            for (var pp = 0; pp < pcount; pp++) {
-                funcs[f][pp] = funcs[f][pp] || 0; //若无完整的参数量，则补0
+        if (dfine) {
+            //调用函数
+            for (var f in funcs) {
+                var fn = f.split("_");
+                var fname = fn[0];
+                var pcount = fn[1];
+                for (var pp = 0; pp < pcount; pp++) {
+                    funcs[f][pp] = funcs[f][pp] || 0; //若无完整的参数量，则补0
+                }
+                creates.push(dfine + "." + fname + "(" + funcs[f].join(",") + ");")
             }
-            creates.push(dfine + "." + fname + "(" + funcs[f].join(",") + ");")
-        }
-        //其他属性
-        for (var p in props) {
-            creates.push(dfine + 　"." + p + " = " + props[p] + ";");
+            //其他属性
+            for (var p in props) {
+                creates.push(dfine + 　"." + p + " = " + props[p] + ";");
+            }
+
+            if (parentNodeName) {
+                creates.push(parentNodeName + ".addChild(" + dfine + ");");
+            }
+            creates.push("\n");
         }
 
-        if (parentNodeName) {
-            creates.push(parentNodeName + ".addChild(" + dfine + ");");
-        }
-        creates.push("\n");
     }
 }
 
@@ -335,24 +349,33 @@ function recDefine(nodeName, attrs, declares, usedTempDefine) {
     var define = attrs["var"] || nodeName.toLowerCase();
 
     var clazz = nodeName;
+    if (rule.specialClass[clazz]) {
+        clazz = rule.specialClass[clazz];
+    }
     var needRec = true;
-    if (attrs["name"] && !rule.specialAttr.name[nodeName]) {
-        if (attrs["var"]) {
-            define = attrs["var"];
-        } else {
-            needRec = false;
-            define = attrs["name"].toLowerCase();
+    if (attrs["name"]) {
+
+        if (rule.specialAttr.name[nodeName]) {
+            if (rule.specialAttr.name[nodeName].type == "internalClass") {
+                clazz = attrs["name"] + "UI";
+            }
         }
-        clazz = attrs["name"];
+        else {
+            if (attrs["var"]) {
+                define = attrs["var"];
+            } else {
+                needRec = false;
+                define = attrs["name"].toLowerCase();
+            }
+            clazz = attrs["name"];
+        }
     } else if (attrs["var"]) {
         define = attrs["var"];
     } else {
         needRec = false;
     }
 
-    if (rule.specialClass[clazz]) {
-        clazz = rule.specialClass[clazz];
-    }
+
     if (needRec) { //已命名的成员变量
         declares[define] = clazz;
     } else { //临时变量
@@ -408,8 +431,7 @@ function recProps(attKey, attValue, props, res, force) {
             if (validResTyes.indexOf(tail) != -1) {
                 attValue = quote("assets/img/" + attFix.join("/") + "." + tail);
                 res[attValue] = true;
-            }
-            else {
+            } else {
                 attValue = quote(tail);
             }
         } else {
@@ -425,7 +447,7 @@ function recProps(attKey, attValue, props, res, force) {
 }
 
 
-function parseChildUI(packName, fileName, rootName, nodeData, res) {
+function parseChildUI(packName, fileName, rootName, nodeData, res, needGenLgFile) {
     ///-----------------解析子类----------------------------------
     var imports = {}; //key记录导包信息
     var declares = {}; //记录变量声明
@@ -443,10 +465,11 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
     genUIfile(fileName, packName, rootName, imports, declares, null, creates, gdEles);
 
     //生成逻辑类
-    genLgFile(fileName, fileName + "UI", packName, rule.noCallCreateChildren[rootName] ? "" : "createChildren");
+    if (needGenLgFile)
+        genLgFile(fileName, fileName + "UI", packName, rule.noCallCreateChildren[rootName] ? "" : "createChildren");
 }
 //生成UI类
-function genUIfile(fileName, packName, rootName, imports, declares, res, creates,gdEles) {
+function genUIfile(fileName, packName, rootName, imports, declares, res, creates, gdEles) {
     var clzNm = fileName + "UI";
 
     var filePath = path.join(dir, "view", packName, fileName);
@@ -456,11 +479,11 @@ function genUIfile(fileName, packName, rootName, imports, declares, res, creates
         pack: getPackName(filePath),
         imports: Object.keys(imports),
         className: clzNm,
-        viewName:fileName,
+        viewName: fileName,
         declares: getDeclare(declares),
         rootName: rootName,
         creates: creates,
-        gdEles:gdEles,
+        gdEles: gdEles,
         createFunType: rule.overrideCreateChildren[rootName] ? "override protected" : '',
         ui: true
     }

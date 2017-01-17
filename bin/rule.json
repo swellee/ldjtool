@@ -1,76 +1,88 @@
 {
-  "ver": 1.1,
   "import": {
-    "default": "laya.ui",
-    "Label": "n2laya.ui",
-    "List": "n2laya.ui",
-    "Input": "laya.display",
-    "Sprite": "n2laya.ui",
-    "View": "app.core",
-    "ItemRenderer": "app.core",
-    "Rect": "app.ui",
-    "Icon": "app.ui",
-    "Button": "app.ui",
+    "BarrageItem": "app.modules.widget",
+    "BarrageLayer": "app.modules.widget",
+    "BasicItem": "app.modules.widget",
+    "BitmapLabel": "n2laya.ui",
     "BitmapNum": "app.ui",
+    "Button": "app.ui",
     "ButtonBar": "app.ui",
     "CheckButton": "app.ui",
+    "CurrentServerItem": "app.modules.login.view",
+    "DetailsCostItem": "app.modules.widget.view",
+    "EffectU": "n2laya.ui",
+    "EquipShowView": "app.modules.bag.view",
     "HeroCard": "app.ui",
+    "HeroItem": "app.modules.widget",
+    "HtmlLabel": "n2laya.ui",
+    "Icon": "app.ui",
+    "Image": "n2laya.ui",
+    "Input": "laya.display",
+    "ItemRenderer": "app.core",
+    "Label": "n2laya.ui",
+    "List": "n2laya.ui",
+    "ProgressBar": "n2laya.ui",
+    "RecentSrvitem": "app.modules.login.view",
+    "Rect": "app.ui",
+    "SpecialRwdItemRenderer": "app.modules.fight.view.renderer",
+    "Sprite": "n2laya.ui",
     "StarRate": "app.ui",
     "StarRate2": "app.ui",
-    "HeroItem": "app.modules.widget",
-    "BasicItem": "app.modules.widget",
-    "HtmlLabel": "n2laya.ui",
-    "CurrentServerItem": "app.modules.login.view",
-    "EffectU": "n2laya.ui",
-    "RecentSrvitem": "app.modules.login.view"
+    "View": "app.core",
+    "default": "laya.ui"
   },
-  "specialAttr": {
-    "name": {
-      "default": "class",
-      "Button": {
-        "type": "prop",
-        "prop": "stateNum"
-      },
-      "List": {
-        "type": "childClass",
-        "prop": "itemRender",
-        "addProp": {
-          "vScrollBarSkin": "''"
-        }
-      }
-    },
-    "text": {
-      "when": "Label",
-      "prop": "value"
-    },
-    "sceneColor": "",
-    "sceneBg": "",
-    "layers": "",
-    "layer": "",
-    "multiline": "",
-    "centerX": "",
-    "centerY": "",
-    "stateNum": "",
-    "styleSkin": "",
-    "var": "var",
-    "width": "size_2_0",
-    "height": "size_2_1",
-    "x": "pos_2_0",
-    "y": "pos_2_1",
-    "size": "fontSize",
-    "ItemRenderer": "itemRender",
-    "labelSize": "labelDisplay.fontSize",
-    "labelColors": "labelDisplay.color"
-  },
-  "specialClass": {
-    "Container": "Sprite",
-    "Text": "Label",
-    "Tab": "ButtonBar"
+  "noCallCreateChildren": {
+    "ItemRenderer": true
   },
   "overrideCreateChildren": {
     "ItemRenderer": true
   },
-  "noCallCreateChildren": {
-    "ItemRenderer": true
-  }
+  "specialAttr": {
+    "ItemRenderer": "itemRender",
+    "centerX": "",
+    "centerY": "",
+    "height": "size_2_1",
+    "labelColors": "labelDisplay.color",
+    "labelSize": "labelDisplay.fontSize",
+    "layer": "",
+    "layers": "",
+    "multiline": "",
+    "name": {
+      "Button": {
+        "prop": "stateNum",
+        "type": "prop"
+      },
+      "List": {
+        "addProp": {
+          "vScrollBarSkin": "''"
+        },
+        "prop": "itemRender",
+        "type": "childClass"
+      },
+      "Panel":{
+        "prop": "className",
+        "type": "internalClass"
+      },
+      "default": "class"
+    },
+    "sceneBg": "",
+    "sceneColor": "",
+    "size": "fontSize",
+    "stateNum": "",
+    "styleSkin": "",
+    "text": {
+      "prop": "value",
+      "when": "Label"
+    },
+    "var": "var",
+    "width": "size_2_0",
+    "x": "pos_2_0",
+    "y": "pos_2_1"
+  },
+  "specialClass": {
+    "Container": "Sprite",
+    "Tab": "ButtonBar",
+    "Text": "Label"
+  },
+  "ver": 1.2
 }
