@@ -5,7 +5,7 @@ package {pack}{~lb}{~n}
 {! class_begin !}
 public class {className|s} extends {rootName|s} {~lb}{~n}
 {! declares !}
-{#declares}	protected var {dfine|s}:{type|s};{~n}{/declares}
+{#declares}	public var {dfine|s}:{type|s};{~n}{/declares}
 {! constructor !}
 {~s}{~s}{~s}{~s}public function {className|s}(){~lb}{~n}
 {~s}{~s}{~s}{~s}{~s}{~s}{~s}{~s}super();{~n}

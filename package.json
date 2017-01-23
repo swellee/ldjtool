@@ -1,8 +1,8 @@
 {
   "name": "ldjtool",
-  "version": "0.8.61",
+  "version": "0.8.63",
   "cfgVer":1.0,
-  "uiRuleVer":1.1,
+  "uiRuleVer":1.2,
   "scripts": {
     "start": "node bin/ldjtool"
   },

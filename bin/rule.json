@@ -59,7 +59,7 @@
         "prop": "itemRender",
         "type": "childClass"
       },
-      "Panel":{
+      "Panel": {
         "prop": "className",
         "type": "internalClass"
       },

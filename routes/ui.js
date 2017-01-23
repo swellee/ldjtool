@@ -230,8 +230,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, g
                                 specialRule = nameRule.prop;
                                 props[specialRule] = fileName;
                                 //将子类包引入
-                                var dname = path.dirname(file);
-                                dname = dname.split(cfg.baseUiPackRootName)[1].substr(1);
+                                var dname = dir.split(cfg.baseUiPackRootName)[1].substr(1);
                                 var pks = dname.split(path.sep).join(".").toLowerCase();
                                 var ipt = cfg.baseUiPackgeIdr + pks + ".view." + packName + "." + fileName;
                                 imports[ipt] = true;
@@ -245,17 +244,22 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, g
                                 }
                             }
                             //生成子类代码
-                            parseChildUI(packName, fileName, rootName, nodeData, res, true);
+                            parseChildUI(packName, fileName, rootName, nodeData, res);
                         }
                         //直接映射成一个新类
                         else if (nameRule["type"] == "internalClass") {
-                            //记录类型
-                            // recProps(specialRule, attValue, props, res);
                             //生成映射类
                             var nms = attValue.trim().split(":");
                             var flNm = nms[0];
-                            var bsNm = nms.length > 1 ? nms[1] : "Sprite";
-                            parseChildUI("", flNm, bsNm, nodeData, res, false);
+                            var bsNm = nms.length > 1 ? nms[1] : "View";
+
+                            var dname = dir.split(cfg.baseUiPackRootName)[1].substr(1);
+                            var pks = dname.split(path.sep).join(".").toLowerCase();
+                            var ipt = cfg.baseUiPackgeIdr + pks + ".view.";
+
+                            rule.import[flNm] = ipt;
+
+                            parseChildUI("", flNm, bsNm, nodeData, res);
                         }
                         //将name作为属性处理
                         else if (nameRule["type"] == "prop") {
@@ -357,7 +361,7 @@ function recDefine(nodeName, attrs, declares, usedTempDefine) {
 
         if (rule.specialAttr.name[nodeName]) {
             if (rule.specialAttr.name[nodeName].type == "internalClass") {
-                clazz = attrs["name"] + "UI";
+                clazz = attrs["name"];
             }
         }
         else {
@@ -447,7 +451,7 @@ function recProps(attKey, attValue, props, res, force) {
 }
 
 
-function parseChildUI(packName, fileName, rootName, nodeData, res, needGenLgFile) {
+function parseChildUI(packName, fileName, rootName, nodeData, res) {
     ///-----------------解析子类----------------------------------
     var imports = {}; //key记录导包信息
     var declares = {}; //记录变量声明
@@ -465,8 +469,7 @@ function parseChildUI(packName, fileName, rootName, nodeData, res, needGenLgFile
     genUIfile(fileName, packName, rootName, imports, declares, null, creates, gdEles);
 
     //生成逻辑类
-    if (needGenLgFile)
-        genLgFile(fileName, fileName + "UI", packName, rule.noCallCreateChildren[rootName] ? "" : "createChildren");
+    genLgFile(fileName, fileName + "UI", packName, rule.noCallCreateChildren[rootName] ? "" : "createChildren");
 }
 //生成UI类
 function genUIfile(fileName, packName, rootName, imports, declares, res, creates, gdEles) {
