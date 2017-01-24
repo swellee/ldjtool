@@ -16,5 +16,6 @@
 <body style='margin:0;overflow:none;overflow-x:hidden;overflow-y:hidden;background-color: #000;'>{~n}
 {~s}{~s}<script src='http://d.hgame.com/loadsdk?v=2'></script>{~n}
 {~s}{~s}<script src='Main.max.js?ver={ver}' loader='laya'></script>{~n}
+{~s}{~s}<script src='css/css.js'></script>{~n}
 </body>{~n}
 </html>
