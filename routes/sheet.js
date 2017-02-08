@@ -130,7 +130,7 @@ function mergeToJson(sht, name, fl) {
     }
 
     var shtFlag = sht[0][0]
-    if (shtFlag && shtFlag != sheetTags.client && shtFlag != sheetTags.double) {
+    if (!shtFlag || (shtFlag != sheetTags.client && shtFlag != sheetTags.double)) {
         return; //目前只处理客户端表
     }
     //先读掉前几行配置、类型、注释等

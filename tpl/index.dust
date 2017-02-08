@@ -12,10 +12,10 @@
 {~s}{~s}<meta id='appinfo' ver='{ver}' debug='{debug}' branch='{branch}' />{~n}
 {~s}{~s}<meta name='laya' logoimg='logo.png' logobkcolor='#ffffff' screenorientation='landscape' cacheid='fffffffff' />{~n}
 {~s}{~s}<link rel="stylesheet" type="text/css" href="css/style.css">{~n}
+{~s}{~s}<script src="css/addition.js"></script>{~n}
 </head>{~n}
 <body style='margin:0;overflow:none;overflow-x:hidden;overflow-y:hidden;background-color: #000;'>{~n}
 {~s}{~s}<script src='http://d.hgame.com/loadsdk?v=2'></script>{~n}
 {~s}{~s}<script src='Main.max.js?ver={ver}' loader='laya'></script>{~n}
-{~s}{~s}<script src='css/css.js'></script>{~n}
 </body>{~n}
 </html>

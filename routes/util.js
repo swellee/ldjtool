@@ -9,7 +9,7 @@ function mkdirs(dirpath, callback) {
 	dirpath = path.resolve(dirpath)
 	fs.access(dirpath, fs.F_OK, function(err){
 		if (err) {
-				var cmd = process.platform == "win32" ? ("mkdir " + dirpath) : ("mkdir -p " + dirpath)
+				var cmd = process.platform == "mkdir -p " + dirpath;
 			    require("child_process").execSync(cmd);
 		}
 		callback && callback();
