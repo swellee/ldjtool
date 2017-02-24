@@ -15,4 +15,5 @@
     *ldjtool -ux : 添加UI解析时的 类名-包名 规则，以适应生成代码时对自定义类映射的支持；\n\n\
     *ldjtool -uw : 监控UI文件目录的改动，自动重新生成UI代码；\n\n\
     *ldjtool -b [projectDir] :编译项目；projectDir为项目路径，不传则使用当前路径（如果当前路径不是客户端目录，则会出错）\n\
+    *ldjtool -r [projectDir] :压缩项目目录下bin/h5/assets 下面的图片资源，projectDir为项目路径，不传则使用当前路径\n\
     *ldjtool -p [projectDir] [ver]:发布项目，projectDir为项目路径，不传则使用当前路径, 参数ver为版本号，不传则使用老的版本号，如果只传一个参数，则此参数当作版本号处理
