@@ -4,6 +4,7 @@
 var fs = require("fs");
 var path = require("path");
 var dust = require('dustjs-linkedin');
+var hash = require('crypto');
 
 function mkdirs(dirpath, callback) {
 	dirpath = path.resolve(dirpath)
@@ -41,7 +42,17 @@ function compileTpl(tplName, data, callback) {
 		callback(out);
 	});
 }
+var runningHash = 0;
+var hashReqs = [];
+function getFileHash(file) {
+    var content = fs.readFileSync(file);
+    var md5 = hash.createHash("md5");
+    md5.update(content);
+    return md5.digest("hex");
+}
+
 
 exports.mkdirs = mkdirs;
 exports.err = errOut;
 exports.dust = compileTpl;
+exports.hash = getFileHash;

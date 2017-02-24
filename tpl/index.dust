@@ -1,7 +1,7 @@
 <html>{~n}
 <head>{~n}
 {~s}{~s}<meta charset='utf-8'/>{~n}
-{~s}{~s}<title>www.layabox.com</title>{~n}
+{~s}{~s}<title>鹿鼎记</title>{~n}
 {~s}{~s}<meta name='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>{~n}
 {~s}{~s}<meta name='apple-mobile-web-app-capable' content='yes' />{~n}
 {~s}{~s}<meta name='full-screen' content='true' />{~n}
@@ -12,9 +12,9 @@
 {~s}{~s}<meta id='appinfo' ver='{ver}' debug='{debug}' branch='{branch}' />{~n}
 {~s}{~s}<meta name='laya' logoimg='logo.png' logobkcolor='#ffffff' screenorientation='landscape' cacheid='fffffffff' />{~n}
 {~s}{~s}<link rel="stylesheet" type="text/css" href="css/style.css">{~n}
-{~s}{~s}<script src="css/addition.js"></script>{~n}
 </head>{~n}
 <body style='margin:0;overflow:none;overflow-x:hidden;overflow-y:hidden;background-color: #000;'>{~n}
+{~s}{~s}<script src="css/addition.js"></script>{~n}
 {~s}{~s}<script src='http://d.hgame.com/loadsdk?v=2'></script>{~n}
 {~s}{~s}<script src='Main.max.js?ver={ver}' loader='laya'></script>{~n}
 </body>{~n}

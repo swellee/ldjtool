@@ -28,6 +28,7 @@ var options = {
     "-m": modPrjConfig,
     "-x": parseSheet,
     "-b": buildApp,
+    "-r": resCompress,
     "-p": publishApp
 };
 
@@ -42,6 +43,7 @@ function main(argv) {
     routes.util = require("./routes/util");
     routes.sheet = require("./routes/sheet");
     routes.depack = require("./routes/depack");
+    routes.compress = require("./routes/compressimg");
     //是否需要强制升级配置
     routes.util.mkdirs(userCfgDir, function() {
         var uCfg; //用户参数
@@ -126,6 +128,7 @@ function showHelp() {
     ldjtool -ux : 添加UI解析时的 类名-包名 规则，以适应生成代码时对自定义类映射的支持；\n\n\
     ldjtool -uw : 监控UI文件目录的改动，自动重新生成UI代码；\n\n\
     ldjtool -b [projectDir] :编译项目；projectDir为项目路径，不传则使用当前路径（如果当前路径不是客户端目录，则会出错）\n\
+    ldjtool -r [projectDir] :压缩项目目录下bin/h5/assets 下面的图片资源，projectDir为项目路径，不传则使用当前路径\n\
     ldjtool -p [projectDir] [ver]:发布项目，projectDir为项目路径，不传则使用当前路径, 参数ver为版本号，不传则使用老的版本号，如果只传一个参数，则此参数当作版本号处理");
 }
 
@@ -275,6 +278,11 @@ function parseSheet() {
     routes.sheet(cfg, cmds);
 }
 
+function resCompress(prjPath) {
+    prjPath = prjPath || cmds.shift(); //项目目录
+    routes.compress(prjPath);
+}
+
 function buildApp(cb, ignoreSdk) {
     var prjPath = process.cwd();
     if (cmds.length) {
@@ -374,6 +382,8 @@ function publishApp() {
             fs.writeFileSync(flilePath, result.code);
         }
 
+        resCompress(prjPath);
+
         console.log("将版本号更新到index.html");
         routes.util.dust("index", { ver: ver, debug: false, branch: getCurBranchName() }, function(out) {
             var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
@@ -381,7 +391,8 @@ function publishApp() {
 
             console.log("创建资源目录带版本号的软链接");
             sh.execSync("cd bin/h5; rm res*; ln -s assets res" + ver);
-        })
+        });
+
     }, true);
 
 }

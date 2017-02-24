@@ -142,7 +142,7 @@ function mergeToJson(sht, name, fl) {
     var colNames = shtHeads[2]; //字段名
     //确定有效数据的起始列索引
     var colStart = 0;
-    while (!colNames[colStart] && colStart < 9) {
+    while (!colNames[colStart] || (colFlags[colStart] == nameIgnore || colFlags[colStart].indexOf(nameTags.server) != -1) && colStart < 9) {
         colStart++;
     }
 
@@ -155,7 +155,7 @@ function mergeToJson(sht, name, fl) {
             var clName = colNames[k];
             var clFlag = colFlags[k];
             //字段过滤
-            if (clName && clFlag && (clFlag != nameIgnore || clFlag.indexOf(nameTags.server) == -1)) {
+            if (clName && clFlag && clFlag != nameIgnore && clFlag.indexOf(nameTags.server) == -1) {
                 var clData = line[k];
                 cell[clName] = parseType(clFlag, clData);
             }
@@ -169,7 +169,7 @@ function mergeToJson(sht, name, fl) {
 
 function parseType(type, data) {
     if (type.indexOf("STRING") != -1) {
-        return data? (data + ""):"";
+        return data? (data + "").replace(/&n/g,"\n"):"";
     } else if (type.indexOf("INT") != -1 || type.indexOf("NUMBER") != -1) {
         return parseInt(data);
     }
