@@ -1,6 +1,4 @@
 {
-  "ver": 1.0,
-  "baseUiFileDir": "/Users/swellee/Documents/work/ldjsvn/06interaction/mornUI_ludingjiUI/morn/pages",
   "baseUiPackRootName": "pages",
   "clientDir": "/Users/swellee/Documents/work/ludingji",
   "baseUiPackgeIdr": "app.modules.",

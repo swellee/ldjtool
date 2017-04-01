@@ -4,12 +4,13 @@
 var fs = require("fs");
 var path = require("path");
 var dust = require('dustjs-linkedin');
+var hash = require('crypto');
 
 function mkdirs(dirpath, callback) {
 	dirpath = path.resolve(dirpath)
 	fs.access(dirpath, fs.F_OK, function(err){
 		if (err) {
-				var cmd = process.platform == "mkdir -p " + dirpath;
+				var cmd = "mkdir -p " + dirpath;
 			    require("child_process").execSync(cmd);
 		}
 		callback && callback();
@@ -41,7 +42,17 @@ function compileTpl(tplName, data, callback) {
 		callback(out);
 	});
 }
+var runningHash = 0;
+var hashReqs = [];
+function getFileHash(file) {
+    var content = fs.readFileSync(file);
+    var md5 = hash.createHash("md5");
+    md5.update(content);
+    return md5.digest("hex");
+}
+
 
 exports.mkdirs = mkdirs;
 exports.err = errOut;
 exports.dust = compileTpl;
+exports.hash = getFileHash;

@@ -28,6 +28,7 @@ var options = {
     "-m": modPrjConfig,
     "-x": parseSheet,
     "-b": buildApp,
+    "-r": resCompress,
     "-p": publishApp
 };
 
@@ -42,6 +43,7 @@ function main(argv) {
     routes.util = require("./routes/util");
     routes.sheet = require("./routes/sheet");
     routes.depack = require("./routes/depack");
+    routes.compress = require("./routes/compressimg");
     //是否需要强制升级配置
     routes.util.mkdirs(userCfgDir, function() {
         var uCfg; //用户参数
@@ -126,12 +128,13 @@ function showHelp() {
     ldjtool -ux : 添加UI解析时的 类名-包名 规则，以适应生成代码时对自定义类映射的支持；\n\n\
     ldjtool -uw : 监控UI文件目录的改动，自动重新生成UI代码；\n\n\
     ldjtool -b [projectDir] :编译项目；projectDir为项目路径，不传则使用当前路径（如果当前路径不是客户端目录，则会出错）\n\
+    ldjtool -r [projectDir] :压缩项目目录下bin/h5/assets 下面的图片资源，projectDir为项目路径，不传则使用当前路径\n\
     ldjtool -p [projectDir] [ver]:发布项目，projectDir为项目路径，不传则使用当前路径, 参数ver为版本号，不传则使用老的版本号，如果只传一个参数，则此参数当作版本号处理");
 }
 
 //只会遍历baseUIFileDir之下的一级目录！！！！！
 function parseUI() {
-    var loc = cfg.baseUiFileDir;
+    var loc = path.join(cfg.clientDir, "ui/laya/pages/");
     if (cmds.length) {
         loc = cmds.shift();
     }
@@ -211,7 +214,7 @@ function watchUIdir() {
         return;
     uiwatching = true;
     console.log("开始监控UI目录...")
-    var dir = cfg.baseUiFileDir;
+    var dir = cmds.length ? cmds.pop() : cfg.baseUiFileDir;
     uiwatch.createMonitor(dir, function(monitor) {
         monitor.on("created", function(f, stat) {
             // Handle new files
@@ -273,6 +276,11 @@ function parseUI2As(uifliles) {
 
 function parseSheet() {
     routes.sheet(cfg, cmds);
+}
+
+function resCompress(prjPath) {
+    prjPath = prjPath || cmds.shift(); //项目目录
+    routes.compress(prjPath);
 }
 
 function buildApp(cb, ignoreSdk) {
@@ -374,6 +382,8 @@ function publishApp() {
             fs.writeFileSync(flilePath, result.code);
         }
 
+        resCompress(prjPath);
+
         console.log("将版本号更新到index.html");
         routes.util.dust("index", { ver: ver, debug: false, branch: getCurBranchName() }, function(out) {
             var htmlfile = path.resolve(prjPath, "bin/h5/index.html");
@@ -381,7 +391,8 @@ function publishApp() {
 
             console.log("创建资源目录带版本号的软链接");
             sh.execSync("cd bin/h5; rm res*; ln -s assets res" + ver);
-        })
+        });
+
     }, true);
 
 }
@@ -417,9 +428,11 @@ function modConfig() {
         for (var mk in result) {
             cfg[mk] = pathSep(result[mk]);
         }
-        var cpath = pathSep(path.resolve(__dirname, "./bin/config.json"));
+        cfg.ver = packInfo.cfgVer;
         //写入config.json
-        fs.writeFile(userCfgPath, JSON.stringify(cfg), function(err) {
+        fs.appendFile(userCfgPath, JSON.stringify(cfg), {
+            flag: "w"
+        }, function(err) {
             if (err) {
                 routes.util.err(err);
             } else {

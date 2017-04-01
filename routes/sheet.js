@@ -28,13 +28,28 @@ function main(usrCfg, cmds) {
     inDir = cfg.excelInDir;
     outDir = cfg.excelOutDir;
 
-    if (cmds) {
+    if (cmds && cmds.length) {
         if (cmds.length)
             inDir = cmds.shift();
         if (cmds.length)
             outDir = cmds.shift();
+    } else {
+        //默认读取与客户端分支对应名称的配表目录
+        process.chdir(cfg.clientDir);
+        var clientBr = require("child_process").execSync('git branch', { encoding: "utf-8" });
+        clientBr = clientBr.match(/\*\s\w+/)[0].replace(/\*\s+/g, '');
+        inDir = inDir.replace(/branches\/\w+/, "branches/" + clientBr);
+        console.log("尝试使用配表目录>>>" + inDir + "生成配置")
     }
-    process.chdir(inDir);
+    try {
+        process.chdir(inDir);
+
+    } catch (e) {
+        console.warn("警告：未找到与当前客户端分支" + clientBr + "对应的配表目录>>>" + inDir);
+        console.warn("将使用默认的目录" + cfg.excelInDir + "的配表");
+        inDir = cfg.excelInDir;
+        process.chdir(inDir);
+    }
     fs.readdir(inDir, listFiles);
 }
 
@@ -142,7 +157,7 @@ function mergeToJson(sht, name, fl) {
     var colNames = shtHeads[2]; //字段名
     //确定有效数据的起始列索引
     var colStart = 0;
-    while (!colNames[colStart] && colStart < 9) {
+    while (!colNames[colStart] || (colFlags[colStart] == nameIgnore || colFlags[colStart].indexOf(nameTags.server) != -1) && colStart < 9) {
         colStart++;
     }
 
@@ -155,7 +170,7 @@ function mergeToJson(sht, name, fl) {
             var clName = colNames[k];
             var clFlag = colFlags[k];
             //字段过滤
-            if (clName && clFlag && (clFlag != nameIgnore || clFlag.indexOf(nameTags.server) == -1)) {
+            if (clName && clFlag && clFlag != nameIgnore && clFlag.indexOf(nameTags.server) == -1) {
                 var clData = line[k];
                 cell[clName] = parseType(clFlag, clData);
             }
@@ -169,7 +184,7 @@ function mergeToJson(sht, name, fl) {
 
 function parseType(type, data) {
     if (type.indexOf("STRING") != -1) {
-        return data? (data + ""):"";
+        return data ? (data + "").replace(/&n/g, "\n") : "";
     } else if (type.indexOf("INT") != -1 || type.indexOf("NUMBER") != -1) {
         return parseInt(data);
     }

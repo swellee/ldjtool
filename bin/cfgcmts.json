@@ -1,5 +1,4 @@
 {
-  "baseUiFileDir":"UI文件根目录，现为",
   "clientDir":"客户端目录，现为",
   "excelInDir":"配表所在目录，现为",
   "excelOutDir":"配表转成tpl.json后的存放目录，现为",

@@ -7,7 +7,7 @@ var path = require("path");
 var fs = require("fs");
 var util = require("./util");
 var os = require("os");
-var validResTyes = "jpg,png";
+var validResTyes = ["jpg", "png"];
 var userCfgDir = path.join(os.homedir(), ".ldjtool");
 var cfg = require(path.join(userCfgDir, "cfg.json"));
 var rule = require(path.join(cfg.clientDir, ".ui_rule.json"));
@@ -20,31 +20,20 @@ var file = paras.pop();
 var dir = path.dirname(file);
 var dirName = path.basename(dir);
 var actTask = 0; //活动任务数
+const guide_valid_node_names = ["View", "Panel"];
+
 parseUI(file);
 
 
 function parseUI(file) {
-    if (path.extname(file) != ".xml") {
-        process.send("跳过非xml文件" + file);
+    if (path.extname(file) != ".ui") {
+        process.send("跳过非ui文件" + file);
         return;
     }
     actTask++;
     var content = fs.readFileSync(file, {
         encoding: "utf8"
     });
-    var idx = 0; //按节点，借用layer属性，进行节点的显示排序，因为MornUI在保存文件时，只通过节点顺序标识组件显示层级，xml解析后可能打乱节点
-    content = content.replace(/layer=\"[0-9]\"/g, function() {
-        return 'layer="' + (idx++) + '"';
-    });
-    try {
-        var xmlData = xml.parse(content, {
-            preserveAttributes: true,
-            preserveDocumentNode: true
-        });
-    } catch (e) {
-        process.send("已跳过异常文件：" + file + "\n" + e);
-        return;
-    }
 
     ///-----------------解析分类----------------------------------
     var imports = {}; //通过key来记录导包并去重
@@ -53,14 +42,15 @@ function parseUI(file) {
         "var": true
     }; //已经使用过的局部变量名
     var declares = {}; //记录变量声明
-    var fileName = path.basename(file, ".xml");
+    var fileName = path.basename(file, ".ui");
     var creates = [];
-    var rootName = Object.keys(xmlData)[0]; //根容器，用于生成父类名
-    var rootNode = xmlData[rootName];
-    rootNode["_Attribs"].var = '';
+
+    var rootNode = JSON.parse(content);
+    var rootName = rootNode.type; //根容器，用于生成父类名
+    rootNode.props.var = '';
     var lists = [];
+    var gdEles = guide_valid_node_names.indexOf(rootNode.type) != -1 ? [] : null;
     listNodes("this", rootName, rootNode, lists, rootName, declares, usedTempDefine);
-    var gdEles = rootName == "View" ? [] : null;
     parseNode(lists, imports, res, declares, creates, usedTempDefine, gdEles);
 
     ///-----------------解析完成----------------------------------
@@ -83,7 +73,7 @@ function parseUI(file) {
             continue;
         }
         var rP = key.replace(/("|')/g, '');
-        var resP = path.resolve(cfg.baseUiFileDir, "../", rP.replace("img", ""));
+        var resP = path.resolve(cfg.clientDir, "ui/laya/", rP.replace("img", ""));
         var toP = path.resolve(cfg.clientDir, "bin/h5", rP);
         //如果是btn，则尝试拷贝其多态皮肤
         if (resP.indexOf("btn_") != -1) {
@@ -132,9 +122,10 @@ function listNodes(parentName, nodeName, nodeData, list, rootName, declares, use
 
     parentName = parentName == rootName.toLowerCase() ? "this" : parentName;
 
-    if (nodeData["_Attribs"]) {
-        var attrs = nodeData["_Attribs"];
+    if (nodeData.props) {
+        var attrs = nodeData.props;
         var rec = recDefine(nodeName, attrs, declares, usedTempDefine);
+
         //本节点数据
         list.push({
             parentName: parentName,
@@ -144,7 +135,7 @@ function listNodes(parentName, nodeName, nodeData, list, rootName, declares, use
             clazz: rec.clazz
         });
 
-        if (nodeData["_Attribs"]["name"]) {
+        if (nodeData.props["name"]) {
             //需要作为子类导出的节点数据
             if (rule.specialAttr.name[nodeName]) {
                 var nameRule = rule.specialAttr.name;
@@ -154,35 +145,20 @@ function listNodes(parentName, nodeName, nodeData, list, rootName, declares, use
             }
         }
 
-        //其他同级数组节点或子节点，递归
-        for (var key in nodeData) {
-            if (key == "_Attribs") {
-                continue;
-            }
-
-            var node = nodeData[key];
-            if (node.constructor == Array) {
-                for (var i in node) {
-                    listNodes(rec.define, key, node[i], list, rootName, declares, usedTempDefine);
-                }
-            } else {
-                listNodes(rec.define, key, node, list, rootName, declares, usedTempDefine);
-            }
+        //子级
+        if (nodeData.child) {
+            nodeData.child.forEach(function(c) {
+                listNodes(rec.define, c.type, c, list, rootName, declares, usedTempDefine);
+            })
         }
 
     }
 
+
+
 }
 
-
-
 function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, gdEles) {
-    nodeLists.sort(function(a, b) {
-        if (a.nodeData["_Attribs"] && b.nodeData["_Attribs"]) {
-            return a.nodeData["_Attribs"].layer - b.nodeData["_Attribs"].layer;
-        }
-        return 0;
-    });
     for (var i = 0; i < nodeLists.length; i++) {
         var node = nodeLists[i];
 
@@ -196,7 +172,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, g
         var funcs = {};
         var props = {};
         //处理当前节点的属性
-        var attrs = nodeData["_Attribs"];
+        var attrs = nodeData.props;
         var dfine = node.define;
         var clazz = node.clazz;
         for (var attKey in attrs) {
@@ -216,6 +192,7 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, g
                 if (attKey == "name") {
                     if (specialRule[nodeName]) {
                         var nameRule = specialRule[nodeName];
+
                         //将子对象映射为类
                         if (nameRule["type"] == "childClass") {
                             //兼容老的规则，老规则默认只生成ItemRenderer子类
@@ -258,7 +235,6 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, g
                             var ipt = cfg.baseUiPackgeIdr + pks + ".view.";
 
                             rule.import[flNm] = ipt;
-
                             parseChildUI("", flNm, bsNm, nodeData, res);
                         }
                         //将name作为属性处理
@@ -289,7 +265,6 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, g
                         funcs[funName][paraIdx] = attValue;
 
                     } else {
-
                         recProps(specialRule, attValue, props, res);
                     }
                 }
@@ -348,7 +323,6 @@ function parseNode(nodeLists, imports, res, declares, creates, usedTempDefine, g
     }
 }
 
-
 function recDefine(nodeName, attrs, declares, usedTempDefine) {
     var define = attrs["var"] || nodeName.toLowerCase();
 
@@ -360,8 +334,12 @@ function recDefine(nodeName, attrs, declares, usedTempDefine) {
     if (attrs["name"]) {
 
         if (rule.specialAttr.name[nodeName]) {
-            if (rule.specialAttr.name[nodeName].type == "internalClass") {
+            var nameRule = rule.specialAttr.name[nodeName];
+            if (nameRule.type == "internalClass") {
                 clazz = attrs["name"];
+            }
+            if (!attrs["var"]) {
+                needRec = false;
             }
         }
         else {
@@ -379,6 +357,9 @@ function recDefine(nodeName, attrs, declares, usedTempDefine) {
         needRec = false;
     }
 
+    if (attrs["runtime"]){//是否二次转换类
+        clazz = attrs["runtime"].trim() || clazz;
+    }
 
     if (needRec) { //已命名的成员变量
         declares[define] = clazz;
@@ -405,41 +386,37 @@ function recDefine(nodeName, attrs, declares, usedTempDefine) {
 
 function recProps(attKey, attValue, props, res, force) {
     //-------处理attvalue---------
-    //颜色统一使用web形式
-    attValue = attValue.replace(/^(0[xX])/g, "#");
-    if (/^\d+(\.\d+)?$/.test(attValue)) {
-        //十进制数字
-        var num = parseFloat(attValue);
-        if (!isNaN(num)) {
-            attValue = num;
-        }
-    } else if (attValue == "true" || attValue == "false") {
+    if (attValue == "true" || attValue == "false") {
         //布尔值
         attValue = Boolean(attValue == "true");
+    } else if (typeof attValue == "number") {
+
     }
     //---------------------------
-    else {
+    else if (typeof attValue == "string") {
         //作为字符串处理
         attValue = attValue.replace(/\s/g, '');
+
         if (attKey == "sizeGrid") {
-            //编辑器里是 左 上 右 下，需要转成 上 右 下左
-            var grids = attValue.split(",");
-            if (grids.length > 3)
-                attValue = quote([grids[1], grids[2], grids[3], grids[0]].join(","));
-            else
-                attValue = quote(attValue);
-        } else if (attKey == "skin") {
-            //标记资源
+            //新ui里九宫顺序一致，不再处理
+            attValue = quote(attValue);
+        } else if (attKey == "skin" || attKey == "vScrollBarSkin" || attKey == "hScrollBarSkin") {
             var attFix = attValue.split(".");
-            var tail = attFix.shift();
+            var tail = attFix.pop();
+            //标记资源
             if (validResTyes.indexOf(tail) != -1) {
-                attValue = quote("assets/img/" + attFix.join("/") + "." + tail);
+                attValue = quote("assets/img/" + attValue);
                 res[attValue] = true;
             } else {
                 attValue = quote(tail);
             }
         } else {
-            attValue = quote(attValue); //包一层引号
+            if (isNaN(attValue)) {
+                attValue = quote(attValue); //包一层引号
+            } else {
+                attValue = parseInt(attValue);
+            }
+
         }
 
     }
@@ -451,7 +428,7 @@ function recProps(attKey, attValue, props, res, force) {
 }
 
 
-function parseChildUI(packName, fileName, rootName, nodeData, res) {
+function parseChildUI(packName, fileName, rootName, node, res) {
     ///-----------------解析子类----------------------------------
     var imports = {}; //key记录导包信息
     var declares = {}; //记录变量声明
@@ -460,10 +437,12 @@ function parseChildUI(packName, fileName, rootName, nodeData, res) {
         "var": true
     }; //已经使用过的局部变量名
     var lists = [];
-    nodeData["_Attribs"].name = rootName;
-    nodeData["_Attribs"].var = '';
-    listNodes("this", rootName, nodeData, lists, rootName, declares, usedTempDefine);
-    var gdEles = rootName == "View" ? [] : null;
+    node.props.name = rootName;
+    node.props.var = '';
+    listNodes("this", rootName, node, lists, rootName, declares, usedTempDefine);
+
+
+    var gdEles = guide_valid_node_names.indexOf(node.type) != -1 ? [] : null;
     parseNode(lists, imports, res, declares, creates, usedTempDefine, gdEles);
     ///-----------------按结构导出UI类--------------------------------
     genUIfile(fileName, packName, rootName, imports, declares, null, creates, gdEles);
